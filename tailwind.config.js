@@ -33,6 +33,12 @@ module.exports = {
         newsletter: "url('/src/assets/img/newsletter-bg.png')",
         newsletterBox: "url('/src/assets/img/newsletter-box.png')",
       },
+      transitionProperty: {
+        'transform': 'transform',
+      },
+      transform: {
+        'scale-105': 'scale(1.05)',
+      },
     },
     screens: {
       sm: '640px',
