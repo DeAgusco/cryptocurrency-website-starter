@@ -1,0 +1,46 @@
+.webkit-backdrop-filter {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+/* iOS-specific background opacity */
+@supports (-webkit-touch-callout: none) {
+  .bg-opacity-10 {
+    --tw-bg-opacity: 0.1 !important;
+  }
+  .bg-opacity-20 {
+    --tw-bg-opacity: 0.2 !important;
+  }
+  .bg-opacity-30 {
+    --tw-bg-opacity: 0.3 !important;
+  }
+  .bg-opacity-40 {
+    --tw-bg-opacity: 0.4 !important;
+  }
+  .bg-opacity-50 {
+    --tw-bg-opacity: 0.5 !important;
+  }
+  .bg-opacity-60 {
+    --tw-bg-opacity: 0.6 !important;
+  }
+  .bg-opacity-70 {
+    --tw-bg-opacity: 0.7 !important;
+  }
+  .bg-opacity-80 {
+    --tw-bg-opacity: 0.8 !important;
+  }
+  .bg-opacity-90 {
+    --tw-bg-opacity: 0.9 !important;
+  }
+}
+
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
