@@ -1,66 +1,39 @@
 // Dashboard.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Pie, Line } from 'react-chartjs-2';
+import { Pie,} from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
 
 const Dashboard = () => {
+  const [coins, setCoins] = useState([]);
   const [trendingCoins, setTrendingCoins] = useState([]);
   const [showBalance, setShowBalance] = useState(true);
-  const [allCoins, setAllCoins] = useState([]);
 
   useEffect(() => {
-    const fetchTrendingCoins = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get('/netlify/functions/coinGeckoProx?path=search/trending');
-        const coins = response.data.coins.slice(0, 5);
-        
-        const detailedData = await Promise.all(coins.map(async (coin) => {
-          const priceResponse = await axios.get(`/netlify/functions/coinGeckoProx?path=coins/${coin.item.id}/market_chart?vs_currency=usd&days=7&interval=daily`);
-          return {
-            ...coin.item,
-            priceData: priceResponse.data.prices.map(price => price[1])
-          };
+        // Fetch all coin data
+        const response = await axios.get('/.netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=true');
+        setCoins(response.data);
+
+        // Fetch trending coins
+        const trendingResponse = await axios.get('/.netlify/functions/coinGeckoProx?path=search/trending');
+        const trendingCoinsData = trendingResponse.data.coins.map(coin => ({
+          ...coin.item,
+          current_price: 0,
+          price_change_percentage_24h: 0
         }));
-        
-        setTrendingCoins(detailedData);
+        setTrendingCoins(trendingCoinsData);
+
       } catch (error) {
-        console.error('Error fetching trending coins:', error);
+        console.error('Error fetching data:', error);
       }
     };
 
-    fetchTrendingCoins();
+    fetchData();
   }, []);
-
-  useEffect(() => {
-    const fetchAllCoins = async () => {
-      try {
-        const response = await axios.get('/netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true');
-        setAllCoins(response.data);
-      } catch (error) {
-        console.error('Error fetching all coins:', error);
-      }
-    };
-
-    fetchAllCoins();
-  }, []);
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      x: { display: false },
-      y: { display: false }
-    },
-    plugins: {
-      legend: { display: false }
-    },
-    elements: {
-      point: { radius: 0 }
-    }
-  };
 
   const toggleBalance = () => {
     setShowBalance(!showBalance);
@@ -90,9 +63,22 @@ const Dashboard = () => {
     ],
   };
 
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          color: 'white'
+        }
+      }
+    }
+  };
+
   return (
     <div className="p-6 bg-darkblue text-white">
-
+      {/* ... (keep the existing JSX for Portfolio Value, Quick Actions, Recent Transactions) ... */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Portfolio Value Card */}
         <div className="bg-none md:bg-blue-500 md:bg-opacity-10 backdrop-filter backdrop-blur-sm rounded-2xl shadow p-6 h-40">
@@ -171,10 +157,9 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
       {/* Asset Distribution Chart */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-        <div className="mt-8 relative bg-blue-500 bg-opacity-10 rounded-2xl shadow p-6 overflow-hidden">
+        <div className="mt-8 relative bg-blue-500 h-96 bg-opacity-10 rounded-2xl shadow p-6 overflow-hidden">
           <div className="relative z-10">
             <h2 className="text-xl font-semibold mb-4 text-white">Asset Distribution</h2>
             <div className="relative h-64 rounded-xl overflow-hidden">
@@ -191,35 +176,29 @@ const Dashboard = () => {
         <div className="mt-8 relative bg-blue-500 bg-opacity-10 rounded-2xl shadow p-6 overflow-hidden">
           <div className="relative z-10">
             <h2 className="text-xl font-semibold mb-4 text-white">Market Trends</h2>
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-white">
-                  <th className="pb-2">Asset</th>
-                  <th className="pb-2">Price</th>
-                  <th className="pb-2">24h Change</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { asset: 'Bitcoin (BTC)', price: '$34,567.89', change: '+1.2%', color: 'text-green-400' },
-                  { asset: 'Ethereum (ETH)', price: '$2,345.67', change: '-0.5%', color: 'text-red-400' },
-                ].map((trend, index) => (
-                  <tr key={index} className="relative rounded-xl overflow-hidden">
-                    <td colSpan="3" className="p-0">
-                      <div className="relative p-4">
-                        <div className="absolute inset-0 bg-darkblue opacity-20"></div>
-                        <div className="absolute inset-0 backdrop-filter backdrop-blur-md"></div>
-                        <div className="relative z-10 flex justify-between items-center text-white">
-                          <span>{trend.asset}</span>
-                          <span>{trend.price}</span>
-                          <span className={trend.color}>{trend.change}</span>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-4">
+              {trendingCoins.slice(0, 3).map((coin) => (
+                <div key={coin.id} className="relative rounded-xl overflow-hidden bg-darkblue bg-opacity-50 p-4">
+                  <div className="flex justify-between items-center text-white mb-2">
+                    <div className="flex items-center">
+                      <img src={coin.thumb} alt={coin.name} className="w-6 h-6 mr-2" />
+                      <span>{coin.name} ({coin.symbol.toUpperCase()})</span>
+                    </div>
+                    <span>${coin.current_price.toLocaleString()}</span>
+                    <span className={coin.price_change_percentage_24h > 0 ? 'text-green-400' : 'text-red-400'}>
+                      {coin.price_change_percentage_24h.toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="h-20 mt-3">
+                    <img 
+                      src={`https://www.coingecko.com/coins/${coin.coin_id}/sparkline.svg`} 
+                      alt={`${coin.name} price trend`}
+                      className="w-full h-full"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -229,36 +208,26 @@ const Dashboard = () => {
         <div className="relative z-10">
           <h2 className="text-xl font-semibold mb-4 text-white">Top Trending Coins</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {trendingCoins.map((coin) => (
+            {trendingCoins.slice(0, 6).map((coin) => (
               <div key={coin.id} className="relative rounded-xl p-4 overflow-hidden">
-                <div className="absolute inset-0 bg-darkblue opacity-20"></div>
-                <div className="absolute inset-0 backdrop-filter backdrop-blur-md"></div>
                 <div className="relative z-10 flex items-center">
-                  <img src={coin.large} alt={coin.name} className="w-10 h-10 mr-3" />
+                  <img src={coin.thumb} alt={coin.name} className="w-10 h-10 mr-3" />
                   <div>
                     <h3 className="font-semibold">{coin.name}</h3>
-                    <p className="text-sm text-gray-300">{coin.symbol}</p>
+                    <p className="text-sm text-gray-300">{coin.symbol.toUpperCase()}</p>
                   </div>
                   <div className="ml-auto">
                     <p className="text-sm">Rank: {coin.market_cap_rank}</p>
-                    <p className={`text-sm ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {coin.price_change_percentage_24h?.toFixed(2)}%
+                    <p className="text-sm">
+                      Score: {coin.score}
                     </p>
                   </div>
                 </div>
                 <div className="h-20 mt-3">
-                  <Line
-                    data={{
-                      labels: coin.priceData.map((_, index) => index),
-                      datasets: [{
-                        data: coin.priceData,
-                        borderColor: coin.price_change_percentage_24h >= 0 ? '#4CAF50' : '#F44336',
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4
-                      }]
-                    }}
-                    options={chartOptions}
+                  <img 
+                    src={`https://www.coingecko.com/coins/${coin.coin_id}/sparkline.svg`} 
+                    alt={`${coin.name} price trend`}
+                    className="w-full h-full"
                   />
                 </div>
               </div>
@@ -272,52 +241,37 @@ const Dashboard = () => {
         <div className="relative z-10">
           <h2 className="text-xl font-semibold mb-4 text-white">All Coins</h2>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
+            <table className="w-full min-w-full table-auto">
+              <thead className="hidden sm:table-header-group">
                 <tr className="text-left text-white">
-                  <th className="pb-2">Coin</th>
-                  <th className="pb-2">Price</th>
-                  <th className="pb-2">24h Change</th>
-                  <th className="pb-2">Market Cap</th>
-                  <th className="pb-2">7d Chart</th>
+                  <th className="pb-2 pr-2">Coin</th>
+                  <th className="pb-2 pr-2">Price</th>
+                  <th className="pb-2 pr-2">24h Change</th>
+                  <th className="pb-2 pr-2">Market Cap</th>
+                  <th className="pb-2">Trade</th>
                 </tr>
               </thead>
               <tbody>
-                {allCoins.map((coin) => (
-                  <tr key={coin.id} className="border-b border-gray-700">
-                    <td className="py-2">
+                {coins.slice(0, 30).map((coin) => (
+                  <tr key={coin.id} className="border-b border-gray-700 flex flex-col sm:table-row mb-4 sm:mb-0">
+                    <td className="py-2 pr-2 flex items-center justify-between sm:table-cell">
                       <div className="flex items-center">
                         <img src={coin.image} alt={coin.name} className="w-6 h-6 mr-2" />
-                        <span>{coin.name}</span>
+                        <span className="truncate max-w-[100px]">{coin.name}</span>
                       </div>
+                      <span className="sm:hidden text-sm">${coin.current_price.toLocaleString()}</span>
                     </td>
-                    <td>${coin.current_price.toLocaleString()}</td>
-                    <td className={coin.price_change_percentage_24h > 0 ? 'text-green-400' : 'text-red-400'}>
-                      {coin.price_change_percentage_24h.toFixed(2)}%
+                    <td className="pr-2 hidden sm:table-cell">${coin.current_price.toLocaleString()}</td>
+                    <td className={`pr-2 ${coin.price_change_percentage_24h > 0 ? 'text-green-400' : 'text-red-400'} flex justify-between sm:table-cell`}>
+                      <span className="sm:hidden text-sm">24h Change:</span>
+                      <span className="text-sm">{coin.price_change_percentage_24h.toFixed(2)}%</span>
                     </td>
-                    <td>${coin.market_cap.toLocaleString()}</td>
-                    <td>
-                      <div className="h-10 w-32">
-                        <Line
-                          data={{
-                            labels: coin.sparkline_in_7d.price.map((_, index) => index),
-                            datasets: [{
-                              data: coin.sparkline_in_7d.price,
-                              borderColor: coin.price_change_percentage_7d_in_currency > 0 ? '#4CAF50' : '#F44336',
-                              borderWidth: 1,
-                              fill: false,
-                              tension: 0.4
-                            }]
-                          }}
-                          options={{
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: { x: { display: false }, y: { display: false } },
-                            plugins: { legend: { display: false } },
-                            elements: { point: { radius: 0 } }
-                          }}
-                        />
-                      </div>
+                    <td className="pr-2 flex justify-between sm:table-cell">
+                      <span className="sm:hidden text-sm">Market Cap:</span>
+                      <span className="text-sm">${coin.market_cap.toLocaleString()}</span>
+                    </td>
+                    <td className="sm:table-cell p-2">
+                      <button className="bg-blue-500 text-white px-4 py-2 rounded-md">Trade</button>
                     </td>
                   </tr>
                 ))}
