@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from './Sidebar';
-import Dashboard from './dashboard';
+import Dashboard from './Dashboard';
 import Navbar from './Navbar'; // Make sure you've created this component
 
 const DashboardLayout = () => {
