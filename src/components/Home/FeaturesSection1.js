@@ -1,5 +1,5 @@
 import React from 'react';
-import Image1 from '../assets/img/feature-1-img.png';
+import Image1 from '../../assets/img/feature-1-img.png';
 const FeaturesSection1 = () => {
   return <section className='mb-5'>
     <div className='container mx-auto'>

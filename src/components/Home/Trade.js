@@ -1,5 +1,5 @@
 import React,{useState} from 'react';
-import { currency } from '../data';
+import { currency } from '../../data';
 
 import { IoIosArrowForward } from 'react-icons/io';
 

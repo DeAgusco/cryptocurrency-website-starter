@@ -12,7 +12,7 @@ const Sidebar = () => {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex bg-darkblue text-white h-60 space-y-10 w-64 p-4 flex-col">
+      <div className="hidden lg:flex bg-darkblue/30 backdrop-filter backdrop-blur-md text-white h-60 space-y-10 w-64 p-4 flex-col">
         <nav className="flex-grow">
           <ul className="space-y-2">
             {menuItems.map((item, index) => (

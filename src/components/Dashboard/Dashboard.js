@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Pie,} from 'react-chartjs-2';
+import ReceiveModal from './ReceiveModal';
+import SendModal from './SendModal';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
@@ -10,6 +12,13 @@ const Dashboard = () => {
   const [coins, setCoins] = useState([]);
   const [trendingCoins, setTrendingCoins] = useState([]);
   const [showBalance, setShowBalance] = useState(true);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  
+  const handleSend = (address, amount) => {
+    console.log(`Sending ${amount} to ${address}`);
+    // Implement your send logic here
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -81,7 +90,7 @@ const Dashboard = () => {
       {/* ... (keep the existing JSX for Portfolio Value, Quick Actions, Recent Transactions) ... */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Portfolio Value Card */}
-        <div className="bg-none md:bg-blue-500 md:bg-opacity-10 backdrop-filter backdrop-blur-sm rounded-2xl shadow p-6 h-40">
+        <div className="bg-none md:backdrop-blur-md md:bg-darkblue/30 p-8 rounded-lg shadow-lg md:border md:border-white/20 z-10 h-40">
           <h2 className="text-xl font-semibold mb-4 text-white text-center">Account Balance</h2>
           <div className="flex flex-row justify-center items-center space-x-2">
             <p className="text-3xl font-bold text-white">
@@ -110,19 +119,18 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions Card */}
-        <div className="relative bg-blue-500 bg-opacity-10 rounded-2xl shadow p-6 overflow-hidden">
+        <div className="relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
           <div className="relative z-10">
-            <h2 className="text-xl font-semibold mb-4 text-white">Quick Actions</h2>
+            <h2 className="text-xl text-center font-semibold mb-4 text-white">Quick Actions</h2>
             <div className="grid grid-cols-3 gap-4">
               {[
-                { name: 'Sell', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-                { name: 'Buy', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-                { name: 'Swap', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' },
                 { name: 'Deposit', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
                 { name: 'Send', icon: 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8' },
-                { name: 'Cashout', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' },
+                { name: 'Receive', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' },
               ].map((action, index) => (
-                <button key={index} className="relative overflow-hidden rounded-xl p-4 hover:bg-opacity-30 transform hover:-translate-y-1 transition-all duration-200 shadow-lg">
+                <button key={index} 
+                className="relative overflow-hidden rounded-xl p-4 hover:bg-opacity-30 transform hover:-translate-y-1 transition-all duration-200 shadow-lg" 
+                onClick={action.name === 'Receive' ? () => setShowReceiveModal(true) : action.name === 'Send' ? () => setShowSendModal(true) : null}>
                   <div className="relative z-10 flex flex-col items-center justify-center text-white">
                     <svg className="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.icon} />
@@ -136,7 +144,7 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Transactions Card */}
-        <div className="relative bg-blue-500 bg-opacity-10 rounded-2xl shadow p-6 overflow-hidden">
+        <div className="relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
           <div className="relative z-10">
             <h2 className="text-xl font-semibold mb-4 text-white">Recent Transactions</h2>
             <ul className="space-y-2">
@@ -159,7 +167,7 @@ const Dashboard = () => {
       </div>
       {/* Asset Distribution Chart */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-        <div className="mt-8 relative bg-blue-500 h-96 bg-opacity-10 rounded-2xl shadow p-6 overflow-hidden">
+        <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10 h-96">
           <div className="relative z-10">
             <h2 className="text-xl font-semibold mb-4 text-white">Asset Distribution</h2>
             <div className="relative h-64 rounded-xl overflow-hidden">
@@ -173,12 +181,12 @@ const Dashboard = () => {
         </div>
 
         {/* Market Trends */}
-        <div className="mt-8 relative bg-blue-500 bg-opacity-10 rounded-2xl shadow p-6 overflow-hidden">
+        <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
           <div className="relative z-10">
             <h2 className="text-xl font-semibold mb-4 text-white">Market Trends</h2>
             <div className="space-y-4">
               {trendingCoins.slice(0, 3).map((coin) => (
-                <div key={coin.id} className="relative rounded-xl overflow-hidden bg-darkblue bg-opacity-50 p-4">
+                <div key={coin.id} className="relative rounded-xl overflow-hidden bg-blue-500 bg-opacity-10 p-4">
                   <div className="flex justify-between items-center text-white mb-2">
                     <div className="flex items-center">
                       <img src={coin.thumb} alt={coin.name} className="w-6 h-6 mr-2" />
@@ -204,12 +212,12 @@ const Dashboard = () => {
       </div>
 
       {/* Top Trending Coins */}
-      <div className="mt-8 relative bg-blue-500 bg-opacity-10 rounded-2xl shadow p-6 overflow-hidden">
+      <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
         <div className="relative z-10">
           <h2 className="text-xl font-semibold mb-4 text-white">Top Trending Coins</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {trendingCoins.slice(0, 6).map((coin) => (
-              <div key={coin.id} className="relative rounded-xl p-4 overflow-hidden">
+              <div key={coin.id} className="relative rounded-xl p-4 bg-blue-500 bg-opacity-10 overflow-hidden">
                 <div className="relative z-10 flex items-center">
                   <img src={coin.thumb} alt={coin.name} className="w-10 h-10 mr-3" />
                   <div>
@@ -237,7 +245,7 @@ const Dashboard = () => {
       </div>
 
       {/* All Coins Table */}
-      <div className="mt-8 relative bg-blue-500 bg-opacity-10 rounded-2xl shadow p-6 overflow-hidden">
+      <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
         <div className="relative z-10">
           <h2 className="text-xl font-semibold mb-4 text-white">All Coins</h2>
           <div className="overflow-x-auto">
@@ -280,8 +288,17 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      <ReceiveModal
+        isOpen={showReceiveModal}
+        onClose={() => setShowReceiveModal(false)}
+        address="0x1234567890123456789012345678901234567890"
+      />
 
-      <div className='h-40 lg:h-16 bg-darkblue'></div>
+      <SendModal
+        isOpen={showSendModal}
+        onClose={() => setShowSendModal(false)}
+        onSend={handleSend}
+      />
     </div>
   );
 };

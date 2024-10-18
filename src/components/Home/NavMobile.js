@@ -1,5 +1,5 @@
 import React from 'react';
-import {navData} from '../data';
+import {navData} from '../../data';
 import { CgClose } from 'react-icons/cg';
 
 const NavMobile = ({setNavMobile}) => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from '../assets/img/hero-img.png';
+import Image from '../../assets/img/hero-img.png';
 import {IoIosArrowDroprightCircle} from 'react-icons/io';
 const Hero = () => {
   return( 

@@ -3,19 +3,15 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import Aos from 'aos';
 import 'aos/dist/aos.css';
 import './styles/animatedBackground.css';
-
-import Header from './components/Header';
-import Hero from './components/Hero';
-import NavMobile from './components/NavMobile';
-import Stats from './components/Stats';
-import Why from './components/Why';
-import Calculate from './components/Calculate';
-import Trade from './components/Trade';
-import Features from './components/Features';
-import Footer from './components/Footer';
-import Signin from './components/Signin';
-import Signup from './components/Signup';
-import DashboardModal from './components/DashboardModal';
+import Header from './components/Home/Header';
+import NavMobile from './components/Home/NavMobile';
+import LandingPage from './components/LandingPage';
+import Footer from './components/Home/Footer';
+import Signin from './components/Auth/Signin';
+import Signup from './components/Auth/Signup';
+import DashboardModal from './components/Dashboard/DashboardModal';
+import EmailConfirmationApproval from './components/Auth/EmailConfirmationApproval';
+import EmailConfirmationListener from './components/Auth/EmailConfirmationListener';
 import './App.css';
 
 const AppContent = () => {
@@ -31,7 +27,7 @@ const AppContent = () => {
     });
   }, []);
 
-  const isAuthPage = ['/login', '/signup'].includes(location.pathname);
+  const isAuthPage = ['/login', '/signup', '/email-confirmation', '/email-confirmation-approval'].includes(location.pathname);
   const isDashboardPage = location.pathname === '/dashboard';
 
   return (
@@ -45,18 +41,15 @@ const AppContent = () => {
       <Routes>
         <Route path="/login" element={<Signin setIsAuthenticated={setIsAuthenticated} />} />
         <Route path="/signup" element={<Signup setIsAuthenticated={setIsAuthenticated} />} />
+        <Route path="/email-confirmation" element={<EmailConfirmationListener />} />
+        <Route path="/email-confirmation-approval" element={<EmailConfirmationApproval />} />
         <Route 
           path="/dashboard" 
           element={isAuthenticated ? <DashboardModal /> : <Navigate to="/login" />} 
         />
         <Route path="/" element={
           <>
-            <Hero />
-            <Stats />
-            <Why />
-            <Calculate />
-            <Trade />
-            <Features />
+            <LandingPage />
           </>
         } />
       </Routes>

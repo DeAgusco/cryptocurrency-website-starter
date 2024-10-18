@@ -1,5 +1,5 @@
 import React from 'react';
-import {navData} from '../data';
+import {navData} from '../../data';
 
 const Nav = () => {
   return <nav className='flex items-center'>

@@ -1,5 +1,5 @@
 import React from 'react';
-import Image3 from '../assets/img/feature-3-img.png';
+import Image3 from '../../assets/img/feature-3-img.png';
 
 const FeaturesSection3 = () => {
   return <section>

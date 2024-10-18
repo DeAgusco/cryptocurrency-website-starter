@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
 import Navbar from './Navbar'; // Make sure you've created this component
+import Footer from '../Home/Footer';
 
 const DashboardLayout = () => {
   return (
@@ -18,6 +19,8 @@ const DashboardLayout = () => {
             <Dashboard />
           </div>
         </main>
+        <Footer />
+        <div className='h-40 lg:h-16 bg-darkblue'></div>
       </div>
       <div className="lg:hidden">
         <Sidebar />

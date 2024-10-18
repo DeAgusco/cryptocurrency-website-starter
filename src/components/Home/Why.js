@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from '../assets/img/why-img.png';
+import Image from '../../assets/img/why-img.png';
 
 const Why = () => {
   return <section>
