@@ -5,14 +5,14 @@ import AccountBtns from './AccountBtns';
 
 import {CgMenuRight} from 'react-icons/cg';
 
-const Header = ({setNavMobile}) => {
+const Header = ({setNavMobile, isAuthenticated}) => {
   return (
   <header className='py-[30px] lg:pt-[60px]' data-aos='fade-down'>
     <div className='container mx-auto flex items-center justify-between'>
         <img src={logo} alt='logo'/>
       <div className='hidden lg:flex gap-x-[55px]'>
         <Nav />
-        <AccountBtns />
+        <AccountBtns isAuthenticated={isAuthenticated} />
       </div>
 
       <div className='lg:hidden cursor-pointer' onClick={()=> setNavMobile(true)}>

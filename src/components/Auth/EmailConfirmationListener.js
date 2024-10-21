@@ -1,22 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import Logo from '../../assets/img/logo.svg';
 import FloatingCoins from '../FloatingCoins';
+import AuthService from '../Services/AuthService';
+import { useNavigate } from 'react-router-dom';
 
-const EmailConfirmationListener = () => {
+const EmailConfirmationListener = ({ setIsAuthenticated }) => {
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Here we'll later implement the WebSocket logic to listen for the approval
-    const simulateConfirmation = () => {
-      setTimeout(() => {
-        setIsConfirmed(true);
-      }, 5000); // Simulate a 5-second wait for demonstration
+    const user_id = localStorage.getItem('user_id');
+    if (!user_id) {
+      console.error('No user_id found in localStorage');
+      return;
+    }
+
+    const verifyEmail = async () => {
+      try {
+        const isVerified = await AuthService.verifyWebSocket(user_id);
+        if (isVerified) {
+          setIsConfirmed(true);
+          setIsAuthenticated(true);
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 5000);
+        } else {
+          console.error('Email verification failed');
+        }
+      } catch (error) {
+        console.error('Error during email verification:', error);
+      }
     };
 
-    simulateConfirmation();
+    verifyEmail();
 
-    // Clean up function (will be replaced with WebSocket disconnect later)
-    return () => clearTimeout(simulateConfirmation);
+    // No need for a cleanup function as the WebSocket is closed in the verifyWebSocket method
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

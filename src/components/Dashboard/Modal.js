@@ -3,11 +3,13 @@ import Logo from '../../assets/img/logo.svg';
 import FloatingCoins from '../FloatingCoins';
 import { QRCodeSVG } from 'qrcode.react'; // You'll need to install this package: npm install qrcode.react
 
-const Modal = ({ isOpen, onClose, title, content, action, qrValue }) => {
+const Modal = ({ isOpen, onClose, steps, currentStep }) => {
   if (!isOpen) return null;
 
+  const CurrentStepComponent = steps[currentStep].component;
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
+    <div className="fixed inset-0 flex items-center justify-center z-[5000]">
       <div className="absolute inset-0 bg-black opacity-50" onClick={onClose}></div>
       <div className="relative flex justify-center items-center min-h-screen w-full">
         <FloatingCoins />
@@ -20,21 +22,12 @@ const Modal = ({ isOpen, onClose, title, content, action, qrValue }) => {
               </svg>
             </button>
           </div>
-          <h2 className="text-2xl font-bold text-center text-white mb-6">{title}</h2>
-          {content && <div className="text-white mb-6">{content}</div>}
-          {qrValue && (
-            <div className="flex justify-center mb-6">
-              <QRCodeSVG value={qrValue} size={200} bgColor="#ffffff" fgColor="#000000" level="H" />
+          <h2 className="text-2xl font-bold text-center text-white mb-6">{steps[currentStep].title}</h2>
+          <CurrentStepComponent />
+          {steps[currentStep].qrValue && (
+            <div className="flex justify-center mt-6">
+              <QRCodeSVG value={steps[currentStep].qrValue} size={200} bgColor="#ffffff" fgColor="#000000" level="H" />
             </div>
-          )}
-          {action && (
-            <button
-              onClick={action.onClick}
-              disabled={action.disabled}
-              className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 rounded-md font-bold text-white transition duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed"
-            >
-              {action.text}
-            </button>
           )}
         </div>
       </div>

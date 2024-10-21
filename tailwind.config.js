@@ -39,6 +39,17 @@ module.exports = {
       transform: {
         'scale-105': 'scale(1.05)',
       },
+      keyframes: {
+        'snake-bounce': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '25%': { transform: 'translateY(-5px)' },
+          '50%': { transform: 'translateY(0)' },
+          '75%': { transform: 'translateY(-3px)' },
+        },
+      },
+      animation: {
+        'snake-bounce': 'snake-bounce 1s ease-in-out infinite',
+      },
     },
     screens: {
       sm: '640px',

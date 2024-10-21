@@ -10,10 +10,10 @@ const Footer = () => {
             <img src={Logo} alt='logo' className='h-10'/>
             <p className='text-gray'>© 2021</p>
           </div>
-          <div className='flex lg:gap-x-5 gap-x-5'>
-            <button className='text-gray hover:underline'>Terms of Service</button>
-            <button className='text-gray hover:underline'>Privacy Policy</button>
-          </div>
+        </div>
+        <div className='flex justify-center lg:justify-end lg:gap-x-5 gap-x-5'>
+          <button className='text-gray hover:underline'>Terms of Service</button>
+          <button className='text-gray hover:underline'>Privacy Policy</button>
         </div>
       </div>
     </div>
