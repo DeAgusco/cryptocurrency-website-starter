@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Web3 from 'web3';
 import Logo from '../../assets/img/logo.svg';
 import { Link } from 'react-router-dom';
 import FloatingCoins from '../FloatingCoins';
@@ -11,7 +10,6 @@ const Signup = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -38,24 +36,6 @@ const Signup = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const connectWallet = async () => {
-    setIsConnecting(true);
-    try {
-      if (window.ethereum) {
-        const web3 = new Web3(window.ethereum);
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const accounts = await web3.eth.getAccounts();
-        console.log('Wallet connected:', accounts[0]);
-      } else {
-        setError('Please install MetaMask to connect your wallet');
-      }
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      setError('Failed to connect wallet. Please try again.');
-    }
-    setIsConnecting(false);
   };
 
   return (
@@ -110,13 +90,6 @@ const Signup = () => {
           </button>
         </form>
         <div className="text-center my-4 text-gray-300">or</div>
-        <button
-          onClick={connectWallet}
-            disabled={isConnecting}
-            className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 rounded-md font-bold text-white transition duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed"
-        >
-          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-        </button>
         <div className="mt-4 text-center text-sm">
           <span className="text-gray-300">Already have an account? </span>
           <Link to="/login" className="hover:underline">Sign In</Link>

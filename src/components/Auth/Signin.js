@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Logo from '../../assets/img/logo.svg';
-import Web3 from 'web3';
 import FloatingCoins from '../FloatingCoins';
 import AuthService from '../Services/AuthService';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 const Signin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -26,23 +24,6 @@ const Signin = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const connectWallet = async () => {
-    setIsConnecting(true);
-    try {
-      if (window.ethereum) {
-        const web3 = new Web3(window.ethereum);
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const accounts = await web3.eth.getAccounts();
-        console.log('Wallet connected:', accounts[0]);
-      } else {
-        alert('Please install MetaMask to connect your wallet');
-      }
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-    }
-    setIsConnecting(false);
   };
 
   return (
@@ -81,13 +62,6 @@ const Signin = () => {
           </button>
         </form>
         <div className="text-center my-4 text-gray-300">or</div>
-        <button
-          onClick={connectWallet}
-          disabled={isConnecting}
-          className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 rounded-md font-bold text-white transition duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed"
-        >
-          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-        </button>
         <div className="mt-4 flex justify-between text-sm">
           <a href="/forgot-password" className="hover:underline">Forgot Password?</a>
           <a href="/signup" className="hover:underline">Create an Account</a>
