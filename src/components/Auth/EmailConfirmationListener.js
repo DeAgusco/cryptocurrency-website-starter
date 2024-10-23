@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const EmailConfirmationListener = ({ setIsAuthenticated }) => {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const navigate = useNavigate();
-
+  const email = localStorage.getItem('email');
   useEffect(() => {
     const user_id = localStorage.getItem('user_id');
     if (!user_id) {
@@ -23,7 +23,7 @@ const EmailConfirmationListener = ({ setIsAuthenticated }) => {
           setIsAuthenticated(true);
           setTimeout(() => {
             navigate('/dashboard');
-          }, 5000);
+          }, 3000);
         } else {
           console.error('Email verification failed');
         }
@@ -37,6 +37,12 @@ const EmailConfirmationListener = ({ setIsAuthenticated }) => {
     // No need for a cleanup function as the WebSocket is closed in the verifyWebSocket method
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const obfuscateEmail = (email) => {
+    const [localPart, domain] = email.split('@');
+    const obfuscatedLocalPart = localPart[0] + '***';
+    return `${obfuscatedLocalPart}@${domain}`;
+  };
 
   return (
     <div className="relative flex justify-center items-center min-h-screen bg-darkblue text-white overflow-hidden">
@@ -54,10 +60,13 @@ const EmailConfirmationListener = ({ setIsAuthenticated }) => {
               </svg>
             </div>
             <p className="text-blue-400 font-bold mb-4 animate-[fadeIn_0.5s_ease-in-out]">Email Confirmed Successfully!</p>
-            <p className="animate-[fadeIn_0.5s_ease-in-out_0.3s_both]">You can now close this window and return to the application.</p>
+            <p className="animate-[fadeIn_0.5s_ease-in-out_0.3s_both]">Wait as we redirect you to your dashboard</p>
           </div>
         ) : (
           <div className="text-center">
+            <div className="flex flex-row justify-center items-cnter space-x-1">
+              <p className="mb-4">We have sent an email to</p><span className="font-bold text-blue-500">{obfuscateEmail(email)}</span>
+            </div>
             <p className="mb-4">Waiting for email confirmation...</p>
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
           </div>

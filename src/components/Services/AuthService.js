@@ -87,6 +87,30 @@ const AuthService = {
     }
   },
 
+  async sendPasswordResetEmail(email) {
+    try {
+      const response = await ApiService.post('/account/password-reset/', {
+        email
+      });
+      return response;
+    } catch (error) {
+      console.error('Password reset email error:', error);
+      throw error;
+    }
+  },
+  async resetPassword(password,token) {
+    try {
+      const response = await ApiService.post('/account/password-reset-confirm/', {
+        password,
+        token
+      });
+      return response;
+    } catch (error) {
+      console.error('Password reset error:', error);
+      throw error;
+    }
+  },
+
   logout() {
     localStorage.removeItem('user_id');
     localStorage.removeItem('token');

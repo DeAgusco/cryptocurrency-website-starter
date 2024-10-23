@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import WalletService from '../Services/WalletService';
 import ReceiveModal from '../Dashboard/ReceiveModal';
-import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon } from '../Auth/CoinIcons';
+import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon, XrpIcon, ShibIcon, AdaIcon, BnbIcon, DotIcon, UsdcIcon, XlmIcon, TrxIcon} from '../Auth/CoinIcons';
 import BalanceCard from '../Dashboard/BalanceCard';
 import DashboardService from '../Services/DashboardService';
 
@@ -12,6 +12,14 @@ const getCoinIcon = (coin) => {
     case 'LTC': return <LitecoinIcon />;
     case 'DOGE': return <DogecoinIcon />;
     case 'USDT': return <UsdtIcon />;
+    case 'XRP': return <XrpIcon />;
+    case 'SHIB': return <ShibIcon />;
+    case 'ADA': return <AdaIcon />;
+    case 'BNB': return <BnbIcon />;
+    case 'DOT': return <DotIcon />;
+    case 'USDC': return <UsdcIcon />;
+    case 'XLM': return <XlmIcon />;
+    case 'TRX': return <TrxIcon />;
     default: return null;
   }
 };

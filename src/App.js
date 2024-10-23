@@ -16,6 +16,7 @@ import WalletLayout from './components/Wallet/WalletLayout';
 import PricesLayout from './components/Prices/PricesLayout';
 import ExchangeLayout from './components/Exchange/ExchangeLayout';
 import SettingsPage from './components/Settings/SettingsPage';
+import PasswordReset from './components/Auth/PasswordReset';
 import './App.css';
 
 const AppContent = () => {
@@ -51,7 +52,7 @@ const AppContent = () => {
       offset: 100,
     });
   }, []);
-  const isAuthPage = ['/login', '/signup', '/email-confirmation', '/wallets', '/prices', '/exchange'].includes(location.pathname) || location.pathname.startsWith('/activate/');
+  const isAuthPage = ['/login', '/signup', '/email-confirmation', '/wallets', '/prices', '/exchange'].includes(location.pathname) || location.pathname.startsWith('/activate/', '/reset-password/');
   const isDashboardPage = location.pathname === '/dashboard';
   const isWalletPage = location.pathname === '/wallets';
   return (
@@ -76,6 +77,7 @@ const AppContent = () => {
         <Route path="/signup" element={<Signup />} />
         <Route path="/email-confirmation" element={<EmailConfirmationListener setIsAuthenticated={setIsAuthenticated} />} />
         <Route path="/activate/:activation_token" element={<EmailConfirmationApproval />} />
+        <Route path='/reset-password/:token' element={<PasswordReset />} />
         <Route 
           path="/dashboard" 
           element={isAuthenticated ? <DashboardModal /> : <Navigate to="/login" />} 
