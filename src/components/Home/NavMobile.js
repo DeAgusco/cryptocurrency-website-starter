@@ -1,6 +1,7 @@
 import React from 'react';
 import {navData} from '../../data';
 import { CgClose } from 'react-icons/cg';
+import AccountBtns from './AccountBtns';
 
 const NavMobile = ({setNavMobile}) => {
   return (
@@ -18,6 +19,9 @@ const NavMobile = ({setNavMobile}) => {
         );
       }
       )}
+      <li>
+        <AccountBtns />
+      </li>
     </ul>
   </nav>
 
