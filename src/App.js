@@ -52,7 +52,7 @@ const AppContent = () => {
       offset: 100,
     });
   }, []);
-  const isAuthPage = ['/login', '/signup', '/email-confirmation', '/wallets', '/prices', '/exchange'].includes(location.pathname) || location.pathname.startsWith('/activate/', '/reset-password/');
+  const isAuthPage = ['/login', '/signup', '/email-confirmation', '/wallets', '/prices', '/exchange'].includes(location.pathname) || location.pathname.startsWith('/activate/') || location.pathname.startsWith('/reset-password/');
   const isDashboardPage = location.pathname === '/dashboard';
   const isWalletPage = location.pathname === '/wallets';
   return (

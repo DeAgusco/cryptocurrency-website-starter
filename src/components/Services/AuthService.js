@@ -101,8 +101,8 @@ const AuthService = {
   async resetPassword(password,token) {
     try {
       const response = await ApiService.post('/account/password-reset-confirm/', {
-        password,
-        token
+        new_password:password,
+        token:token
       });
       return response;
     } catch (error) {
