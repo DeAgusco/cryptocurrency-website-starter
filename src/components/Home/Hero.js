@@ -1,7 +1,20 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Image from '../../assets/img/hero-img.png';
 import {IoIosArrowDroprightCircle} from 'react-icons/io';
+import AuthService from '../Services/AuthService';
+
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    if (AuthService.isAuthenticated()) {
+      navigate('/dashboard');
+    } else {
+      navigate('/signup');
+    }
+  };
+
   return( 
   <section>
     <div className='container mx-auto'>
@@ -18,7 +31,13 @@ const Hero = () => {
             <p className='max-w-[440px] leading-relaxed mb-8' data-aos='fade-down'>Buy and sell cryptocurrencies, trusted by 10M wallets with over
               $1B in transactions.
             </p>
-            <button className='btn gap-x-6 pl-6 text-sm lg:h-16 lg:text-base' data-aos='fade-down'>Get started for free <IoIosArrowDroprightCircle className='text-2xl lg:text-3xl'/></button>
+            <button 
+              onClick={handleGetStarted} 
+              className='btn gap-x-6 pl-6 text-sm lg:h-16 lg:text-base' 
+              data-aos='fade-down'
+            >
+              Get started for free <IoIosArrowDroprightCircle className='text-2xl lg:text-3xl'/>
+            </button>
           </div>
           </div>
           <div className='flex-1' data-aos='fade-up'>

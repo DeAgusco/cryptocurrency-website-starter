@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Modal from './Modal';
 import DashboardService from '../Services/DashboardService';
-import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon } from '../Auth/CoinIcons';
+import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdcIcon, XrpIcon } from '../Auth/CoinIcons';
 
 const Step1 = ({ goToNextStep }) => {
   const [coin, setCoin] = useState('BTC');
@@ -28,7 +28,8 @@ const Step1 = ({ goToNextStep }) => {
       case 'ETH': return <EthereumIcon />;
       case 'LTC': return <LitecoinIcon />;
       case 'DOGE': return <DogecoinIcon />;
-      case 'USDT': return <UsdtIcon />;
+      case 'USDC': return <UsdcIcon />;
+      case 'XRP': return <XrpIcon />;
       default: return null;
     }
   };
@@ -45,7 +46,7 @@ const Step1 = ({ goToNextStep }) => {
           onChange={(e) => setCoin(e.target.value)}
           className="w-full py-2 px-3 bg-darkblue-secondary text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {['BTC', 'ETH', 'LTC', 'DOGE', 'USDT'].map((coinType) => (
+          {['BTC', 'ETH', 'LTC', 'DOGE', 'USDC', 'XRP'].map((coinType) => (
             <option key={coinType} value={coinType}>
               {coinType}
             </option>
@@ -77,7 +78,8 @@ const Step2 = ({ data }) => {
       case 'ETH': return <EthereumIcon />;
       case 'LTC': return <LitecoinIcon />;
       case 'DOGE': return <DogecoinIcon />;
-      case 'USDT': return <UsdtIcon />;
+      case 'USDC': return <UsdcIcon />;
+      case 'XRP': return <XrpIcon />;
       default: return null;
     }
   };

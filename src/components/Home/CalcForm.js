@@ -1,7 +1,20 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import AuthService from '../Services/AuthService';
 
 const CalcForm = () => {
-  return <form>
+  const navigate = useNavigate();
+
+  const handleCalculate = (e) => {
+    e.preventDefault();
+    if (AuthService.isAuthenticated()) {
+      navigate('/dashboard');
+    } else {
+      navigate('/signup');
+    }
+  };
+
+  return <form onSubmit={handleCalculate}>
     <div className='flex gap-x-4'>
       <select className='border border-gray-300 px-4 py-2 rounded-lg w-full bg-navy-700 py-4'>
         <option value=''>H/s</option>
@@ -30,7 +43,7 @@ const CalcForm = () => {
         <option value=''>CAD</option>
       </select>
     </div>
-    <button className='bg-blue text-white px-4 py-2 rounded-lg mt-4 w-full'>Calculate</button>
+    <button type="submit" className='bg-blue text-white px-4 py-2 rounded-lg mt-4 w-full'>Calculate</button>
   </form>;
 };
 

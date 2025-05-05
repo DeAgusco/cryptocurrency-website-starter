@@ -71,6 +71,27 @@ const AddressList = ({ addresses }) => {
   );
 };
 
+const SkeletonCard = () => (
+  <div className="relative backdrop-blur-md bg-darkblue/30 p-6 rounded-lg shadow-lg border border-white/20 z-10 animate-pulse">
+    <div className="flex items-center justify-between mb-4">
+      <div className="h-8 w-36 bg-white/10 rounded-md"></div>
+      <div className="h-8 w-24 bg-white/10 rounded-md"></div>
+    </div>
+    <div className="flex justify-between items-center space-x-2">
+      <div className="h-10 w-full bg-white/10 rounded-md"></div>
+      <div className="h-10 w-full bg-white/10 rounded-md"></div>
+    </div>
+  </div>
+);
+
+const SkeletonBalanceCard = () => (
+  <div className="relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10 animate-pulse mb-6">
+    <div className="h-8 w-48 bg-white/10 rounded-md mb-4"></div>
+    <div className="h-10 w-36 bg-white/10 rounded-md mb-2"></div>
+    <div className="h-6 w-24 bg-white/10 rounded-md"></div>
+  </div>
+);
+
 const WalletPage = () => {
   const [wallets, setWallets] = useState([]);
   const [expandedWallets, setExpandedWallets] = useState({});
@@ -78,6 +99,8 @@ const WalletPage = () => {
   const [selectedCoin, setSelectedCoin] = useState('');
   const [walletData, setWalletData] = useState(null);
   const [showBalance, setShowBalance] = useState(false);
+  const [loading, setLoading] = useState(true);
+  
   const toggleBalance = () => {
     setShowBalance(!showBalance);
   };
@@ -85,12 +108,15 @@ const WalletPage = () => {
   useEffect(() => {
     const fetchWallets = async () => {
       try {
+        setLoading(true);
         const wallet = await DashboardService.getWallet();
         setWalletData(wallet);
         const fetchedWallets = await WalletService.getWallets();
         setWallets(fetchedWallets);
       } catch (error) {
         console.error('Error fetching wallets:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -111,24 +137,38 @@ const WalletPage = () => {
 
   return (
     <div className="p-6 bg-darkblue text-white">
-      <BalanceCard 
-        balance={walletData?.balance} 
-        showBalance={showBalance} 
-        toggleBalance={toggleBalance} 
-      />
-      <h1 className="mt-3 text-3xl font-bold mb-6">Your Wallets</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {wallets.map(wallet => (
-          <div key={wallet.id}>
-            <WalletCard 
-              wallet={wallet} 
-              onToggleAddresses={handleToggleAddresses} 
-              onReceive={handleReceive}
-            />
-            {expandedWallets[wallet.id] && <AddressList addresses={wallet.address} />}
+      {loading ? (
+        <>
+          <SkeletonBalanceCard />
+          <div className="h-10 w-48 bg-white/10 rounded-md mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, index) => (
+              <SkeletonCard key={index} />
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      ) : (
+        <>
+          <BalanceCard 
+            balance={walletData?.balance} 
+            showBalance={showBalance} 
+            toggleBalance={toggleBalance} 
+          />
+          <h1 className="mt-3 text-3xl font-bold mb-6">Your Wallets</h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {wallets.map(wallet => (
+              <div key={wallet.id}>
+                <WalletCard 
+                  wallet={wallet} 
+                  onToggleAddresses={handleToggleAddresses} 
+                  onReceive={handleReceive}
+                />
+                {expandedWallets[wallet.id] && <AddressList addresses={wallet.address} />}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       <ReceiveModal
         isOpen={isReceiveModalOpen}
         onClose={() => setIsReceiveModalOpen(false)}

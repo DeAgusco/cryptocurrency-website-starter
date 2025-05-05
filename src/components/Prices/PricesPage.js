@@ -37,17 +37,63 @@ const SearchDropdown = ({ coins, onSelect }) => {
   );
 };
 
+// Skeleton components
+const SkeletonSearch = () => (
+  <div className="mb-6 relative">
+    <div className="w-full h-10 bg-darkblue-secondary/50 animate-pulse rounded-md"></div>
+  </div>
+);
+
+const SkeletonTrendCard = () => (
+  <div className="relative w-full rounded-xl overflow-hidden bg-blue-500 bg-opacity-10 p-4 animate-pulse">
+    <div className="flex justify-between items-center mb-2">
+      <div className="flex items-center">
+        <div className="w-6 h-6 rounded-full bg-white/10 mr-2"></div>
+        <div className="w-24 h-5 bg-white/10 rounded"></div>
+      </div>
+      <div className="w-20 h-5 bg-white/10 rounded"></div>
+      <div className="w-16 h-5 bg-white/10 rounded"></div>
+    </div>
+    <div className="h-20 mt-3 bg-white/5 rounded"></div>
+  </div>
+);
+
+const SkeletonTable = () => (
+  <div className="animate-pulse">
+    <div className="hidden sm:grid sm:grid-cols-6 pb-2">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="h-6 bg-white/10 rounded mb-2"></div>
+      ))}
+    </div>
+    {[...Array(10)].map((_, i) => (
+      <div key={i} className="border-b border-gray-700 py-4">
+        <div className="flex justify-between mb-2 sm:hidden">
+          <div className="w-32 h-6 bg-white/10 rounded"></div>
+          <div className="w-20 h-6 bg-white/10 rounded"></div>
+        </div>
+        <div className="hidden sm:grid sm:grid-cols-6 gap-2">
+          {[...Array(6)].map((_, j) => (
+            <div key={j} className="h-6 bg-white/10 rounded"></div>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const PricesPage = () => {
   const [coins, setCoins] = useState([]);
   const [trendingCoins, setTrendingCoins] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [loading, setLoading] = useState(true);
   const searchRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         const response = await axios.get('/.netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=true');
         setCoins(response.data);
 
@@ -57,8 +103,10 @@ const PricesPage = () => {
           current_price: 0,
           price_change_percentage_24h: 0
         })));
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setLoading(false);
       }
     };
 
@@ -107,94 +155,119 @@ const PricesPage = () => {
     <div className="p-6 bg-darkblue text-white">
       <h1 className="text-3xl font-bold mb-6">Cryptocurrency Prices</h1>
 
-      {/* Search Bar */}
-      <div className="mb-6 relative" ref={searchRef}>
-        <input
-          type="text"
-          placeholder="Search coins..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className="w-full p-2 bg-darkblue-secondary text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        {showDropdown && <SearchDropdown coins={searchResults} onSelect={handleCoinSelect} />}
-      </div>
-
-      {/* Market Trends */}
-      <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
-        <h2 className="text-xl font-semibold mb-4 text-white">Market Trends</h2>
-        <div className="flex flex-col space-y-4 md:flex-row md:space-x-4">
-          {trendingCoins.slice(0, 3).map((coin) => (
-            <div key={coin.id} className="relative w-full rounded-xl overflow-hidden bg-blue-500 bg-opacity-10 p-4">
-              <div className="flex justify-between items-center text-white mb-2">
-                <div className="flex items-center">
-                  <img src={coin.thumb} alt={coin.name} className="w-6 h-6 mr-2" />
-                  <span>{coin.name} ({coin.symbol.toUpperCase()})</span>
-                </div>
-                <span>${coin.current_price.toLocaleString()}</span>
-                <span className={coin.price_change_percentage_24h > 0 ? 'text-green-400' : 'text-red-400'}>
-                  {coin.price_change_percentage_24h.toFixed(2)}%
-                </span>
-              </div>
-              <div className="h-20 mt-3">
-                <img 
-                  src={`https://www.coingecko.com/coins/${coin.coin_id}/sparkline.svg`} 
-                  alt={`${coin.name} price trend`}
-                  className="w-full h-full"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* All Coins Table */}
-      <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
-        <h2 className="text-xl font-semibold mb-4 text-white">All Coins</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-full table-auto">
-            <thead className="hidden sm:table-header-group">
-              <tr className="text-left text-white">
-                <th className="pb-2 pr-2">Coin</th>
-                <th className="pb-2 pr-2">Price</th>
-                <th className="pb-2 pr-2">24h Change</th>
-                <th className="pb-2 pr-2">Market Cap</th>
-                <th className="pb-2 pr-2">Volume (24h)</th>
-                <th className="pb-2 pr-2">Circulating Supply</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCoins.map((coin) => (
-                <tr key={coin.id} className="border-b border-gray-700 flex flex-col sm:table-row mb-4 sm:mb-0">
-                  <td className="py-2 pr-2 flex items-center justify-between sm:table-cell">
-                    <div className="flex items-center">
-                      <img src={coin.image} alt={coin.name} className="w-6 h-6 mr-2" />
-                      <span className="truncate max-w-[100px]">{coin.name}</span>
-                    </div>
-                    <span className="sm:hidden text-sm">${coin.current_price.toLocaleString()}</span>
-                  </td>
-                  <td className="pr-2 hidden sm:table-cell">${coin.current_price.toLocaleString()}</td>
-                  <td className={`pr-2 ${coin.price_change_percentage_24h > 0 ? 'text-green-400' : 'text-red-400'} flex justify-between sm:table-cell`}>
-                    <span className="sm:hidden text-sm">24h Change:</span>
-                    <span className="text-sm">{coin.price_change_percentage_24h.toFixed(2)}%</span>
-                  </td>
-                  <td className="pr-2 flex justify-between sm:table-cell">
-                    <span className="sm:hidden text-sm">Market Cap:</span>
-                    <span className="text-sm">${coin.market_cap.toLocaleString()}</span>
-                  </td>
-                  <td className="pr-2 flex justify-between sm:table-cell">
-                    <span className="sm:hidden text-sm">Volume (24h):</span>
-                    <span className="text-sm">${coin.total_volume.toLocaleString()}</span>
-                  </td>
-                  <td className="pr-2 flex justify-between sm:table-cell">
-                    <span className="sm:hidden text-sm">Circulating Supply:</span>
-                    <span className="text-sm">{coin.circulating_supply.toLocaleString()} {coin.symbol.toUpperCase()}</span>
-                  </td>
-                </tr>
+      {loading ? (
+        <>
+          {/* Skeleton UI */}
+          <SkeletonSearch />
+          
+          <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
+            <div className="h-7 w-40 bg-white/10 rounded mb-4"></div>
+            <div className="flex flex-col space-y-4 md:flex-row md:space-x-4">
+              {[...Array(3)].map((_, i) => (
+                <SkeletonTrendCard key={i} />
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </div>
+          </div>
+          
+          <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
+            <div className="h-7 w-32 bg-white/10 rounded mb-4"></div>
+            <div className="overflow-x-auto">
+              <SkeletonTable />
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Search Bar */}
+          <div className="mb-6 relative" ref={searchRef}>
+            <input
+              type="text"
+              placeholder="Search coins..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="w-full p-2 bg-darkblue-secondary text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {showDropdown && <SearchDropdown coins={searchResults} onSelect={handleCoinSelect} />}
+          </div>
+
+          {/* Market Trends */}
+          <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
+            <h2 className="text-xl font-semibold mb-4 text-white">Market Trends</h2>
+            <div className="flex flex-col space-y-4 md:flex-row md:space-x-4">
+              {trendingCoins.slice(0, 3).map((coin) => (
+                <div key={coin.id} className="relative w-full rounded-xl overflow-hidden bg-blue-500 bg-opacity-10 p-4">
+                  <div className="flex justify-between items-center text-white mb-2">
+                    <div className="flex items-center">
+                      <img src={coin.thumb} alt={coin.name} className="w-6 h-6 mr-2" />
+                      <span>{coin.name} ({coin.symbol.toUpperCase()})</span>
+                    </div>
+                    <span>${coin.current_price.toLocaleString()}</span>
+                    <span className={coin.price_change_percentage_24h > 0 ? 'text-green-400' : 'text-red-400'}>
+                      {coin.price_change_percentage_24h.toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="h-20 mt-3">
+                    <img 
+                      src={`https://www.coingecko.com/coins/${coin.coin_id}/sparkline.svg`} 
+                      alt={`${coin.name} price trend`}
+                      className="w-full h-full"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* All Coins Table */}
+          <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
+            <h2 className="text-xl font-semibold mb-4 text-white">All Coins</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-full table-auto">
+                <thead className="hidden sm:table-header-group">
+                  <tr className="text-left text-white">
+                    <th className="pb-2 pr-2">Coin</th>
+                    <th className="pb-2 pr-2">Price</th>
+                    <th className="pb-2 pr-2">24h Change</th>
+                    <th className="pb-2 pr-2">Market Cap</th>
+                    <th className="pb-2 pr-2">Volume (24h)</th>
+                    <th className="pb-2 pr-2">Circulating Supply</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCoins.map((coin) => (
+                    <tr key={coin.id} className="border-b border-gray-700 flex flex-col sm:table-row mb-4 sm:mb-0">
+                      <td className="py-2 pr-2 flex items-center justify-between sm:table-cell">
+                        <div className="flex items-center">
+                          <img src={coin.image} alt={coin.name} className="w-6 h-6 mr-2" />
+                          <span className="truncate max-w-[100px]">{coin.name}</span>
+                        </div>
+                        <span className="sm:hidden text-sm">${coin.current_price.toLocaleString()}</span>
+                      </td>
+                      <td className="pr-2 hidden sm:table-cell">${coin.current_price.toLocaleString()}</td>
+                      <td className={`pr-2 ${coin.price_change_percentage_24h > 0 ? 'text-green-400' : 'text-red-400'} flex justify-between sm:table-cell`}>
+                        <span className="sm:hidden text-sm">24h Change:</span>
+                        <span className="text-sm">{coin.price_change_percentage_24h.toFixed(2)}%</span>
+                      </td>
+                      <td className="pr-2 flex justify-between sm:table-cell">
+                        <span className="sm:hidden text-sm">Market Cap:</span>
+                        <span className="text-sm">${coin.market_cap.toLocaleString()}</span>
+                      </td>
+                      <td className="pr-2 flex justify-between sm:table-cell">
+                        <span className="sm:hidden text-sm">Volume (24h):</span>
+                        <span className="text-sm">${coin.total_volume.toLocaleString()}</span>
+                      </td>
+                      <td className="pr-2 flex justify-between sm:table-cell">
+                        <span className="sm:hidden text-sm">Circulating Supply:</span>
+                        <span className="text-sm">{coin.circulating_supply.toLocaleString()} {coin.symbol.toUpperCase()}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
