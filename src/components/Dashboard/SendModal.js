@@ -5,7 +5,7 @@ import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon } from 
 import VerificationModal from './VerificationModal';
 
 
-const Step1 = ({ goToNextStep }) => {
+const Step1 = ({ goToNextStep, data, setData }) => {
   const [coins, setCoins] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -14,61 +14,76 @@ const Step1 = ({ goToNextStep }) => {
       try {
         setIsLoading(true);
         const wallets = await WalletService.getWallets();
-        setCoins(wallets);
+        const walletsWithNumericBalance = wallets.map(wallet => ({
+          ...wallet,
+          balance: parseFloat(wallet.balance)
+        }));
+        setCoins(walletsWithNumericBalance);
       } catch (error) {
         console.error('Error fetching wallets:', error);
-        // Handle error (e.g., show error message to user)
+        setCoins([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchWallets();
-  }, []);
+    if (goToNextStep) fetchWallets();
+  }, [goToNextStep]);
 
-  const handleCoinSelect = (coin) => {
-    goToNextStep({ senderCoin: coin, senderWallet: coins.find(c => c.coin === coin) });
+  const handleCoinSelect = (selectedCoin) => {
+    setData({ ...data, senderCoin: selectedCoin.coin, senderWallet: selectedCoin });
+    goToNextStep();
+  };
+
+  const getCoinIcon = (coin) => {
+    if (coin === 'BTC') return <BitcoinIcon />;
+    if (coin === 'ETH') return <EthereumIcon />;
+    if (coin === 'LTC') return <LitecoinIcon />;
+    if (coin === 'DOGE') return <DogecoinIcon />;
+    if (coin === 'USDT') return <UsdtIcon />;
+    return null;
   };
 
   return (
     <div className="space-y-4">
-      <p className="text-white text-center mb-4">Select wallet:</p>
+      <p className="text-white text-center mb-4">Select wallet to send from:</p>
       {isLoading ? (
-        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-      ) : coins.filter(coin => coin.balance > 0).length > 0 ? (
-        coins.filter(coin => coin.balance > 0).map((coin) => (
+        <div className="flex justify-center items-center h-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+        </div>
+      ) : coins.filter(coin => typeof coin.balance === 'number' && coin.balance > 0).length > 0 ? (
+        coins.filter(coin => typeof coin.balance === 'number' && coin.balance > 0).map((coin) => (
           <button
             key={coin.coin}
-            onClick={() => handleCoinSelect(coin.coin)}
-            className="w-full py-2 px-4 bg-blue-500/20 hover:bg-blue-500/40 rounded-md font-bold text-white transition duration-300 flex items-center justify-between"
+            onClick={() => handleCoinSelect(coin)}
+            className="w-full py-3 px-4 bg-darkblue-secondary hover:bg-blue-700/30 rounded-md font-bold text-white transition duration-300 flex items-center justify-between"
           >
             <div className="flex items-center">
-              {coin.coin === 'BTC' && <BitcoinIcon />}
-              {coin.coin === 'ETH' && <EthereumIcon />}
-              {coin.coin === 'LTC' && <LitecoinIcon />}
-              {coin.coin === 'DOGE' && <DogecoinIcon />}
-              {coin.coin === 'USDT' && <UsdtIcon />}
-              <span className="ml-2">{coin.coin}</span>
+              {getCoinIcon(coin.coin)}
+              <span className="ml-3 text-lg">{coin.coin}</span>
             </div>
-            <span className="text-xs text-gray-400">{coin.balance} {coin.coin}</span>
+            <span className="text-sm text-gray-300">
+              {typeof coin.balance === 'number' ? coin.balance.toFixed(8) : 'N/A'} {coin.coin}
+            </span>
           </button>
         ))
       ) : (
-        <p className="text-white text-center">You have no coins available to send.</p>
+        <p className="text-white text-center">You have no coins with a balance available to send.</p>
       )}
     </div>
   );
 };
 
-const Step2 = ({ goToNextStep, data }) => {
-  const coins = ['BTC', 'ETH', 'LTC', 'DOGE', 'USDT'];
-  const [recipientCoin, setRecipientCoin] = useState('');
-  const [address, setAddress] = useState('');
+const Step2 = ({ goToNextStep, data, setData }) => {
+  const availableCoinsForRecipient = ['BTC', 'ETH', 'LTC', 'DOGE', 'USDT', 'USDC', 'XRP'];
+  const [address, setAddress] = useState(data.address || '');
+  const [recipientCoin, setRecipientCoin] = useState(data.recipientCoin || '');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (recipientCoin && address) {
-      goToNextStep({ recipientCoin, address });
+      setData({ ...data, recipientCoin, address });
+      goToNextStep();
     }
   };
 
@@ -76,7 +91,7 @@ const Step2 = ({ goToNextStep, data }) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-white text-sm font-bold mb-2" htmlFor="recipientCoin">
-          Select recipient's coin:
+          Recipient's Coin Type:
         </label>
         <select
           id="recipientCoin"
@@ -84,15 +99,15 @@ const Step2 = ({ goToNextStep, data }) => {
           onChange={(e) => setRecipientCoin(e.target.value)}
           className="w-full py-2 px-3 bg-darkblue-secondary text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">Select a coin</option>
-          {coins.map((coin) => (
+          <option value="">Select coin</option>
+          {availableCoinsForRecipient.map((coin) => (
             <option key={coin} value={coin}>{coin}</option>
           ))}
         </select>
       </div>
       <div>
         <label className="block text-white text-sm font-bold mb-2" htmlFor="address">
-          Recipient's address:
+          Recipient's Address:
         </label>
         <input
           type="text"
@@ -105,7 +120,7 @@ const Step2 = ({ goToNextStep, data }) => {
       </div>
       <button
         type="submit"
-        className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 rounded-md font-bold text-white transition duration-300"
+        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-bold text-white transition duration-300 disabled:opacity-50"
         disabled={!recipientCoin || !address}
       >
         Next
@@ -114,18 +129,25 @@ const Step2 = ({ goToNextStep, data }) => {
   );
 };
 
-const Step3 = ({ goToNextStep, data }) => {
-  const [amount, setAmount] = useState('');
+const Step3 = ({ goToNextStep, data, setData }) => {
+  const [amount, setAmount] = useState(data.amount || '');
   const [error, setError] = useState('');
+
+  const senderBalance = data.senderWallet && typeof data.senderWallet.balance === 'number' 
+                        ? data.senderWallet.balance 
+                        : 0;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (amount && parseFloat(amount) > 0 && parseFloat(amount) <= data.senderWallet.balance) {
-      goToNextStep({ amount });
-    } else if (parseFloat(amount) > data.senderWallet.balance) {
-      setError('Insufficient balance');
+    const numericAmount = parseFloat(amount);
+    if (numericAmount > 0 && numericAmount <= senderBalance) {
+      setData({ ...data, amount: numericAmount });
+      goToNextStep();
+      setError('');
+    } else if (numericAmount > senderBalance) {
+      setError('Insufficient balance.');
     } else {
-      setError('Please enter a valid amount');
+      setError('Please enter a valid positive amount.');
     }
   };
 
@@ -133,7 +155,7 @@ const Step3 = ({ goToNextStep, data }) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-white text-sm font-bold mb-2" htmlFor="amount">
-          Amount to send:
+          Amount to send ({data.senderWallet?.coin}):
         </label>
         <input
           type="number"
@@ -141,18 +163,20 @@ const Step3 = ({ goToNextStep, data }) => {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           className="w-full py-2 px-3 bg-darkblue-secondary text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter amount"
-          step="0.00000001"
+          placeholder="0.00"
+          step="any"
         />
-        <p className="text-sm text-gray-400 mt-2">
-          Available: {data.senderWallet.balance} {data.senderWallet.coin}
-        </p>
+        {data.senderWallet && (
+          <p className="text-sm text-gray-400 mt-1">
+            Available: {typeof senderBalance === 'number' ? senderBalance.toFixed(8) : 'N/A'} {data.senderWallet.coin}
+          </p>
+        )}
       </div>
       {error && <p className="text-red-500 text-sm">{error}</p>}
       <button
         type="submit"
-        className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 rounded-md font-bold text-white transition duration-300"
-        disabled={!amount}
+        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-bold text-white transition duration-300 disabled:opacity-50"
+        disabled={!amount || !data.senderWallet}
       >
         Next
       </button>
@@ -162,118 +186,150 @@ const Step3 = ({ goToNextStep, data }) => {
 
 const Step4 = ({ goToNextStep, data }) => {
   return (
-    <div className="space-y-4">
-      <p className="text-white text-center mb-4">Please verify yourself to send funds:</p>
-      <div className="bg-darkblue-secondary p-4 rounded-md text-white">
-        <p>Sending {data.amount} {data.senderWallet.coin}</p>
-        <p>To: {data.address} ({data.recipientCoin})</p>
+    <div className="space-y-6">
+      <p className="text-white text-center mb-2 text-lg">Review Transaction</p>
+      <div className="bg-darkblue-secondary p-4 rounded-md text-white space-y-2">
+        <p><strong>Sending:</strong> {data.amount} {data.senderWallet?.coin}</p>
+        <p><strong>From:</strong> Your {data.senderWallet?.coin} Wallet</p>
+        <p className="break-all"><strong>To Address:</strong> {data.address}</p>
+        <p><strong>Recipient Coin:</strong> {data.recipientCoin}</p>
       </div>
+      <p className="text-yellow-400 text-xs text-center">You will be asked to verify your identity before sending.</p>
       <button
         onClick={() => goToNextStep()}
-        className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 rounded-md font-bold text-white transition duration-300"
+        className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 rounded-md font-bold text-white transition duration-300"
       >
-        Verify and Send
+        Proceed to Verification
       </button>
     </div>
   );
 };
 
-const Step5 = ({ onClose }) => {
+const Step5 = ({ handleActualVerifyRequest }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 3000);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, []);
 
-  const handleVerify = () => {
-    setShowVerificationModal(true);
-  };
-
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center space-y-4">
+      <div className="flex flex-col items-center justify-center space-y-4 h-40">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        <p className="text-white">Processing your request...</p>
+        <p className="text-white">Preparing verification...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-red-500 text-center">Error: You are not verified</p>
+    <div className="space-y-6 text-center">
+      <p className="text-red-400 text-lg">Verification Required</p>
+      <p className="text-white text-sm">For security reasons, please complete a quick verification to proceed with your transaction.</p>
       <button
-        onClick={handleVerify}
-        className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 rounded-md font-bold text-white transition duration-300"
+        onClick={handleActualVerifyRequest}
+        className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-bold text-white transition duration-300"
       >
-        Click here to verify
+        Start Verification
       </button>
-      {showVerificationModal && (
-        <VerificationModal
-          isOpen={showVerificationModal}
-          onClose={() => setShowVerificationModal(false)}
-        />
-      )}
     </div>
   );
 };
 
 const SendModal = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [sendData, setSendData] = useState({});
+  const [sendData, setSendData] = useState({
+    senderCoin: '',
+    senderWallet: null,
+    recipientCoin: '',
+    address: '',
+    amount: '',
+  });
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+
+  const handleActualVerifyRequest = () => {
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+    setTimeout(() => {
+      setShowVerificationModal(true);
+    }, 100);
+  };
+  
+  const resetStateAndClose = () => {
+    setCurrentStep(0);
+    setSendData({
+      senderCoin: '',
+      senderWallet: null,
+      recipientCoin: '',
+      address: '',
+      amount: '',
+    });
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  };
+
+  const goToNextStep = (stepSpecificData) => {
+    setCurrentStep(prev => prev + 1);
+  };
+  
+  const goToPrevStep = () => {
+    setCurrentStep(prev => Math.max(0, prev - 1));
+  };
+
+  const updateSendData = (newData) => {
+    setSendData(prevData => ({ ...prevData, ...newData }));
+  };
 
   const steps = [
-    {
-      title: "Select Your Wallet",
-      component: Step1,
-    },
-    {
-      title: "Select Recipient's Address",
-      component: Step2,
-    },
-    {
-      title: "Enter Amount",
-      component: Step3,
-    },
-    {
-      title: "Verify and Send",
-      component: Step4,
-    },
-    {
-      title: "Processing",
-      component: Step5,
-    },
+    { title: "Select Your Wallet", component: Step1, props: { setData: updateSendData } },
+    { title: "Recipient Details", component: Step2, props: { setData: updateSendData } },
+    { title: "Enter Amount", component: Step3, props: { setData: updateSendData } },
+    { title: "Review Transaction", component: Step4, props: {} },
+    { title: "Verification Required", component: Step5, props: { handleActualVerifyRequest } },
   ];
 
-  const goToNextStep = (stepData) => {
-    setSendData((prevData) => ({ ...prevData, ...stepData }));
-    setCurrentStep((prevStep) => prevStep + 1);
-  };
-
-  const handleClose = () => {
-    setCurrentStep(0);
-    setSendData({});
-    onClose();
-  };
+  useEffect(() => {
+    if (!isOpen) {
+      setShowVerificationModal(false);
+    }
+  }, [isOpen]);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      steps={steps.map((step, index) => ({
-        ...step,
-        component: () => step.component({ 
-          goToNextStep, 
-          data: sendData,
-          onClose: handleClose
-        }),
-      }))}
-      currentStep={currentStep}
-    />
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={resetStateAndClose}
+        steps={steps.map(step => ({
+          ...step,
+          component: (modalProps) => (
+            <step.component
+              {...modalProps}
+              {...step.props}
+              data={sendData}
+              goToNextStep={goToNextStep}
+              goToPrevStep={goToPrevStep}
+            />
+          )
+        }))}
+        currentStep={currentStep}
+        showBackButton={currentStep > 0 && currentStep < steps.length -1}
+        onBack={goToPrevStep}
+      />
+      
+      {showVerificationModal && (
+        <VerificationModal
+          isOpen={showVerificationModal}
+          onClose={() => {
+            setShowVerificationModal(false);
+          }}
+        />
+      )}
+    </>
   );
 };
 

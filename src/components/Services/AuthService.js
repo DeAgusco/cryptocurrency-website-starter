@@ -124,6 +124,10 @@ const AuthService = {
     return localStorage.getItem('user_id');
   },
 
+  getToken() {
+    return localStorage.getItem('token');
+  },
+
   isLoggedIn() {
     return !!localStorage.getItem('token');
   }

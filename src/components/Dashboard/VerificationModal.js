@@ -1,243 +1,235 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
+import AuthService from '../Services/AuthService';
+import AccountLockService from '../Services/AccountLockService';
+// If you use react-router-dom for navigation after logout, you might need useNavigate
+// import { useNavigate } from 'react-router-dom';
 
-const Step1 = ({ goToNextStep, data, setData }) => {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    goToNextStep();
+// Custom Captcha Component
+const CaptchaStep = ({ attempts, setAttempts, onCloseModal }) => {
+  const [captchaInput, setCaptchaInput] = useState('');
+  const [captchaText, setCaptchaText] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showFailureMessage, setShowFailureMessage] = useState(false);
+  // const navigate = useNavigate(); // Uncomment if direct navigation is needed
+
+  useEffect(() => {
+    generateCaptcha();
+  }, []); // Generate captcha once on component mount or when attempts reset externally
+  
+  const generateCaptcha = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'; // Avoided I,l,1,O,0
+    let captcha = '';
+    for (let i = 0; i < 6; i++) {
+      captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCaptchaText(captcha);
+    setCaptchaInput(''); // Clear previous input
   };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <input
-        type="text"
-        name="fullName"
-        value={data.fullName}
-        onChange={(e) => setData({ ...data, fullName: e.target.value })}
-        placeholder="Full Name"
-        className="w-full p-2 bg-darkblue-secondary text-white rounded-md"
-        required
-      />
-      <input
-        type="date"
-        name="dateOfBirth"
-        value={data.dateOfBirth}
-        onChange={(e) => setData({ ...data, dateOfBirth: e.target.value })}
-        className="w-full p-2 bg-darkblue-secondary text-white rounded-md"
-        required
-      />
-      <input
-        type="text"
-        name="address"
-        value={data.address}
-        onChange={(e) => setData({ ...data, address: e.target.value })}
-        placeholder="Address"
-        className="w-full p-2 bg-darkblue-secondary text-white rounded-md"
-        required
-      />
-      <button type="submit" className="w-full py-2 px-4 bg-blue-500 text-white rounded-md">Next</button>
-    </form>
-  );
-};
-
-const Step2 = ({ goToNextStep, data, setData }) => {
-  const handleSubmit = (e) => {
+  
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    goToNextStep();
-  };
+    if (isSubmitting) return;
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setData({ ...data, idImage: file });
+    setIsSubmitting(true);
+    
+    // Show loading animation for EVERY attempt
+    setIsLoading(true);
+    
+    // Wait 2 seconds to simulate verification
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Show failure message for all attempts
+    setIsLoading(false);
+    setShowFailureMessage(true);
+    setError('Verification failed. Please try again.');
+    
+    // Wait 1 second to show failure before allowing next attempt
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setShowFailureMessage(false);
+    
+    const newAttempts = attempts + 1;
+    setAttempts(newAttempts);
+    generateCaptcha();
+    
+    if (newAttempts >= 3) {
+      // On third attempt, handle account lockout
+      setIsLoading(true);
+      setError('Too many failed attempts. Locking your account for security...');
+      
+      try {
+        const payload = { 
+          reason: 'Too many captcha failures on verification modal', 
+          timestamp: new Date().toISOString(),
+          attemptCount: newAttempts 
+        };
+        
+        // Make the API call while showing loading
+        await AccountLockService.lockAccount(payload).then(response => {
+          console.log('Account lock response:', response);
+        }).catch(err => {
+          console.error('API error:', err);
+        });
+        
+      } catch (error) {
+        console.error('Error during account lock process:', error);
+      } finally {
+        // Show locked account message for 3 seconds before logout
+        setIsLoading(false);
+        setError('ACCOUNT LOCKED: Your account has been locked for security reasons. You will be logged out shortly.');
+        
+        // 3 second delay before logout as requested
+        setTimeout(() => {
+          AuthService.logout();
+          if (onCloseModal) {
+            onCloseModal();
+          }
+        }, 3000);
+      }
+    } else {
+      // For attempts 1 & 2, re-enable the form after showing failure
+      setIsSubmitting(false);
     }
   };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <select
-        name="idType"
-        value={data.idType}
-        onChange={(e) => setData({ ...data, idType: e.target.value })}
-        className="w-full p-2 bg-darkblue-secondary text-white rounded-md"
-        required
-      >
-        <option value="">Select ID Type</option>
-        <option value="passport">Passport</option>
-        <option value="driverLicense">Driver's License</option>
-        <option value="nationalId">National ID</option>
-      </select>
-      <input
-        type="text"
-        name="idNumber"
-        value={data.idNumber}
-        onChange={(e) => setData({ ...data, idNumber: e.target.value })}
-        placeholder="ID Number"
-        className="w-full p-2 bg-darkblue-secondary text-white rounded-md"
-        required
-      />
-      <input
-        type="file"
-        name="idImage"
-        onChange={handleFileChange}
-        className="w-full p-2 bg-darkblue-secondary text-white rounded-md"
-        required
-      />
-      {data.idImage && (
-        <p className="text-sm text-gray-300">Selected file: {data.idImage.name}</p>
-      )}
-      <div className="flex justify-between">
-        <button type="button" onClick={() => goToNextStep(-1)} className="py-2 px-4 bg-gray-500 text-white rounded-md">Back</button>
-        <button type="submit" className="py-2 px-4 bg-blue-500 text-white rounded-md">Next</button>
+  
+  // Show verification processing screen
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center space-y-6 py-8">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+        <p className="text-white text-xl">Processing verification...</p>
+        {attempts >= 3 && (
+          <p className="text-red-500 text-center font-bold">Multiple failures detected. Securing account...</p>
+        )}
       </div>
-    </form>
-  );
-};
-
-const Step3 = ({ goToNextStep, data, setData }) => {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    goToNextStep();
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setData({ ...data, addressProofImage: file });
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="text-white">Upload a proof of address (utility bill, bank statement, etc.)</p>
-      <input
-        type="file"
-        name="addressProofImage"
-        onChange={handleFileChange}
-        className="w-full p-2 bg-darkblue-secondary text-white rounded-md"
-        required
-      />
-      {data.addressProofImage && (
-        <p className="text-sm text-gray-300">Selected file: {data.addressProofImage.name}</p>
-      )}
-      <div className="flex justify-between">
-        <button type="button" onClick={() => goToNextStep(-1)} className="py-2 px-4 bg-gray-500 text-white rounded-md">Back</button>
-        <button type="submit" className="py-2 px-4 bg-blue-500 text-white rounded-md">Next</button>
+    );
+  }
+  
+  // Show failure animation between attempts
+  if (showFailureMessage) {
+    return (
+      <div className="flex flex-col items-center justify-center space-y-6 py-8 animate-pulse">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        <p className="text-red-500 text-xl font-bold">VERIFICATION FAILED</p>
+        {attempts === 2 && (
+          <p className="text-yellow-400 text-sm">Warning: One more failure will lock your account!</p>
+        )}
       </div>
-    </form>
-  );
-};
-
-const Step4 = ({ goToNextStep, data, isLoading, error }) => {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    goToNextStep();
-  };
-
+    );
+  }
+  
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-white font-bold">Review Your Information</h3>
-      <p className="text-white">Name: {data.fullName}</p>
-      <p className="text-white">Date of Birth: {data.dateOfBirth}</p>
-      <p className="text-white">Address: {data.address}</p>
-      <p className="text-white">ID Type: {data.idType}</p>
-      <p className="text-white">ID Number: {data.idNumber}</p>
-      <p className="text-white">ID Image: {data.idImage?.name}</p>
-      <p className="text-white">Address Proof: {data.addressProofImage?.name}</p>
-      {error && <p className="text-red-500">{error}</p>}
-      <div className="flex justify-between">
-        <button type="button" onClick={() => goToNextStep(-1)} className="py-2 px-4 bg-gray-500 text-white rounded-md">Back</button>
-        <button type="submit" className="py-2 px-4 bg-blue-500 text-white rounded-md" disabled={isLoading}>
-          {isLoading ? 'Submitting...' : 'Submit'}
+      <div className="bg-gray-800 p-4 rounded-md text-center relative overflow-hidden">
+        <div 
+          className="select-none text-3xl font-mono tracking-widest text-white p-3 rounded"
+          style={{ 
+            backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc), linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc)',
+            backgroundSize: '10px 10px',
+            backgroundPosition: '0 0, 5px 5px',
+            textShadow: '2px 2px 2px rgba(0,0,0,0.7)',
+            letterSpacing: '0.2em',
+            fontFamily: '"Courier New", Courier, monospace'
+          }}
+        >
+          {captchaText.split('').map((char, index) => (
+            <span key={index} style={{
+              transform: `rotate(${Math.random() * 40 - 20}deg) skewX(${Math.random() * 20 - 10}deg)`,
+              display: 'inline-block',
+              margin: '0 2px'
+            }}>{char}</span>
+          ))}
+        </div>
+        {/* Obfuscation lines */}
+        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+          {[...Array(5)].map((_, i) => (
+            <line
+              key={i}
+              x1={Math.random() * 100 + "%"}
+              y1={Math.random() * 100 + "%"}
+              x2={Math.random() * 100 + "%"}
+              y2={Math.random() * 100 + "%"}
+              stroke={`rgba(${Math.random()*155 + 100}, ${Math.random()*155 + 100}, ${Math.random()*155 + 100}, 0.5)`}
+              strokeWidth={Math.random() * 1 + 1}
+            />
+          ))}
+        </svg>
+      </div>
+      
+      <div>
+        <label className="block text-white text-sm font-bold mb-2" htmlFor="captcha">
+          Enter the text shown above:
+        </label>
+        <input
+          type="text"
+          id="captcha"
+          value={captchaInput}
+          onChange={(e) => setCaptchaInput(e.target.value)}
+          className="w-full py-2 px-3 bg-darkblue-secondary text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter captcha text"
+          autoComplete="off"
+          disabled={isSubmitting || attempts >= 3}
+        />
+      </div>
+      
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+      
+      <div className="flex justify-between items-center mt-4">
+        <button 
+          type="button" 
+          onClick={() => { if (!isSubmitting) {generateCaptcha(); setError('');} }} 
+          className="py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors disabled:opacity-50"
+          disabled={isSubmitting || attempts >= 3}
+        >
+          Refresh
+        </button>
+        <button 
+          type="submit" 
+          className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50"
+          disabled={isSubmitting || attempts >= 3}
+        >
+          {isSubmitting ? 'Processing...' : attempts >= 3 ? 'Locked' : 'Verify'}
         </button>
       </div>
+      
+      <p className="text-xs text-gray-400 mt-2 text-center">
+        {attempts >= 3 ? 
+          <span className="text-red-500 font-bold">ACCOUNT LOCKED</span> : 
+          `Attempts remaining: ${Math.max(0, 3 - attempts)}`
+        }
+      </p>
     </form>
   );
 };
 
 const VerificationModal = ({ isOpen, onClose }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    dateOfBirth: '',
-    address: '',
-    idType: '',
-    idNumber: '',
-    idImage: null,
-    addressProofImage: null,
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [attempts, setAttempts] = useState(0);
 
-  const goToNextStep = async (increment = 1) => {
-    const nextStep = currentStep + increment;
-    if (nextStep >= 0 && nextStep < steps.length) {
-      setCurrentStep(nextStep);
-    } else if (nextStep === steps.length) {
-      // Submit the form
-      setIsLoading(true);
-      setError('');
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      setIsLoading(false);
-      setError('Verification failed. Please try again later.');
+  // Reset attempts when modal opens or closes
+  useEffect(() => {
+    if (isOpen) {
+      setAttempts(0); // Reset attempts when modal becomes visible
     }
-  };
+  }, [isOpen]);
 
-  const handleClose = () => {
-    setCurrentStep(0);
-    setFormData({
-      fullName: '',
-      dateOfBirth: '',
-      address: '',
-      idType: '',
-      idNumber: '',
-      idImage: null,
-      addressProofImage: null,
-    });
-    setError('');
-    onClose();
+  const handleInternalClose = () => {
+    setAttempts(0); // Ensure attempts are reset
+    onClose(); // Call the original onClose prop
   };
 
   const steps = [
     {
-      title: "Personal Information",
+      title: "Security Verification",
+      // Pass onClose to CaptchaStep if you want it to be able to close the modal itself
       component: () => (
-        <Step1
-          goToNextStep={goToNextStep}
-          data={formData}
-          setData={setFormData}
-        />
-      ),
-    },
-    {
-      title: "Identity Verification",
-      component: () => (
-        <Step2
-          goToNextStep={goToNextStep}
-          data={formData}
-          setData={setFormData}
-        />
-      ),
-    },
-    {
-      title: "Address Verification",
-      component: () => (
-        <Step3
-          goToNextStep={goToNextStep}
-          data={formData}
-          setData={setFormData}
-        />
-      ),
-    },
-    {
-      title: "Review and Submit",
-      component: () => (
-        <Step4
-          goToNextStep={goToNextStep}
-          data={formData}
-          isLoading={isLoading}
-          error={error}
+        <CaptchaStep
+          attempts={attempts}
+          setAttempts={setAttempts}
+          onCloseModal={handleInternalClose} 
         />
       ),
     },
@@ -246,9 +238,9 @@ const VerificationModal = ({ isOpen, onClose }) => {
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={handleInternalClose} // Use the wrapper for close
       steps={steps}
-      currentStep={currentStep}
+      currentStep={0} // Always on the first (and only) step
     />
   );
 };
