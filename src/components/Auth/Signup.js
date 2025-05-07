@@ -10,6 +10,7 @@ const Signup = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [transactionVolume, setTransactionVolume] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -21,8 +22,15 @@ const Signup = () => {
       setError("Passwords don't match!");
       return;
     }
+    
+    if (!transactionVolume) {
+      setError("Please select your expected transaction volume");
+      return;
+    }
+    
     try {
       setIsLoading(true);
+      // Note: transactionVolume is not included in the payload
       const response = await AuthService.register(username, email, password);
       if (response.error) {
         setError(response.error);
@@ -81,6 +89,27 @@ const Signup = () => {
             required
             className="w-full px-3 py-2 bg-gray-700/50 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400"
           />
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Expected Monthly Transaction Volume</label>
+            <div className="grid grid-cols-2 gap-3">
+              {['$0-$1,000', '$1,000-$10,000', '$10,000-$100,000', '$100,000+'].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setTransactionVolume(option)}
+                  className={`py-2 px-3 text-sm rounded-md transition-all duration-300 border ${
+                    transactionVolume === option
+                      ? 'border-green-400 bg-green-400/20 text-white'
+                      : 'border-gray-600 bg-gray-700/30 text-gray-300 hover:bg-gray-600/40'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={isLoading}

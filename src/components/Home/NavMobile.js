@@ -3,7 +3,7 @@ import {navData} from '../../data';
 import { CgClose } from 'react-icons/cg';
 import AccountBtns from './AccountBtns';
 
-const NavMobile = ({setNavMobile}) => {
+const NavMobile = ({setNavMobile, isAuthenticated, checkAuthStatus}) => {
   return (
   <nav className='lg:hidden bg-darkblue-secondary h-full top-0 bottom-0 w-80 flex justify-center items-center'>
     <div className='absolute top-2 left-2 cursor-pointer' onClick={()=> setNavMobile(false)}>
@@ -20,7 +20,7 @@ const NavMobile = ({setNavMobile}) => {
       }
       )}
       <li>
-        <AccountBtns />
+        <AccountBtns isAuthenticated={isAuthenticated} checkAuthStatus={checkAuthStatus} />
       </li>
     </ul>
   </nav>

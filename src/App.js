@@ -66,7 +66,7 @@ const AppContent = () => {
       )}
       {!isAuthPage && !isDashboardPage && !isWalletPage && (
         <div className={`${navMobile ? 'right-0' : '-right-full'} fixed z-10 top-0 h-full transition-all duration-500`}>
-          <NavMobile setNavMobile={setNavMobile}/>
+          <NavMobile setNavMobile={setNavMobile} isAuthenticated={isAuthenticated} checkAuthStatus={checkAuthStatus} />
         </div>
       )}
       <Routes>
