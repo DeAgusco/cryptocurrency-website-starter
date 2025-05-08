@@ -44,10 +44,8 @@ const AuthService = {
 
   async verifyWebSocket(user_id) {
     return new Promise((resolve, reject) => {
-      // Determine if we need secure websockets based on current protocol
-      const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-      const baseUrl = process.env.REACT_APP_WS_BASE_URL || 
-                      `${protocol}${window.location.hostname}:8000`;
+      // Always use secure websockets
+      const baseUrl = process.env.REACT_APP_WS_BASE_URL;
       
       // Create WebSocket connection 
       const ws = new WebSocket(`${baseUrl}/ws/verify/${user_id}/`);
