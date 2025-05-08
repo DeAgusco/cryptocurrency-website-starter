@@ -44,33 +44,59 @@ const AuthService = {
 
   async verifyWebSocket(user_id) {
     return new Promise((resolve, reject) => {
-      const ws = new WebSocket(`${process.env.REACT_APP_WS_BASE_URL || 'ws://localhost:8000'}/ws/verify/${user_id}/`);
+      // Determine if we need secure websockets based on current protocol
+      const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+      const baseUrl = process.env.REACT_APP_WS_BASE_URL || 
+                      `${protocol}${window.location.hostname}:8000`;
+      
+      // Create WebSocket connection 
+      const ws = new WebSocket(`${baseUrl}/ws/verify/${user_id}/`);
+      
+      // Add connection timeout (5 seconds)
+      const connectionTimeout = setTimeout(() => {
+        console.error('WebSocket connection timeout');
+        ws.close();
+        reject(new Error('WebSocket connection timeout'));
+      }, 5000);
 
       ws.onopen = () => {
         console.log('WebSocket connection established');
+        clearTimeout(connectionTimeout);
       };
 
       ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.message === 'activated' && data.token) {
-          // Store the token in localStorage
-          localStorage.setItem('token', data.token);
-          console.log('Token set in localStorage:', data.token);
-          resolve(true);
-        } else {
-          console.warn('Activation failed or token not received');
-          resolve(false);
+        try {
+          const data = JSON.parse(event.data);
+          if (data.message === 'activated' && data.token) {
+            // Store the token in localStorage
+            localStorage.setItem('token', data.token);
+            console.log('Token set in localStorage:', data.token);
+            resolve(true);
+          } else {
+            console.warn('Activation failed or token not received:', data);
+            resolve(false);
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+          reject(error);
+        } finally {
+          ws.close();
         }
-        ws.close();
       };
 
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
+        clearTimeout(connectionTimeout);
         reject(error);
       };
 
-      ws.onclose = () => {
-        console.log('WebSocket connection closed');
+      ws.onclose = (event) => {
+        console.log('WebSocket connection closed', event.code, event.reason);
+        clearTimeout(connectionTimeout);
+        // If connection was never established properly
+        if (event.code !== 1000 && !localStorage.getItem('token')) {
+          reject(new Error(`WebSocket closed unexpectedly: ${event.code}`));
+        }
       };
     });
   },
