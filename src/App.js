@@ -52,9 +52,16 @@ const AppContent = () => {
       offset: 100,
     });
   }, []);
+
+  // Close mobile nav when changing routes
+  useEffect(() => {
+    setNavMobile(false);
+  }, [location.pathname]);
+
   const isAuthPage = ['/login', '/signup', '/email-confirmation', '/wallets', '/prices', '/exchange'].includes(location.pathname) || location.pathname.startsWith('/activate/') || location.pathname.startsWith('/reset-password/');
   const isDashboardPage = location.pathname === '/dashboard';
   const isWalletPage = location.pathname === '/wallets';
+  
   return (
     <div className='overflow-hidden'>
       {!isAuthPage && !isDashboardPage && (
@@ -64,11 +71,16 @@ const AppContent = () => {
           checkAuthStatus={checkAuthStatus}
         />
       )}
-      {!isAuthPage && !isDashboardPage && !isWalletPage && (
-        <div className={`${navMobile ? 'right-0' : '-right-full'} fixed z-10 top-0 h-full transition-all duration-500`}>
-          <NavMobile setNavMobile={setNavMobile} isAuthenticated={isAuthenticated} checkAuthStatus={checkAuthStatus} />
-        </div>
+      
+      {/* Mobile Menu */}
+      {!isAuthPage && !isDashboardPage && !isWalletPage && navMobile && (
+        <NavMobile 
+          setNavMobile={setNavMobile} 
+          isAuthenticated={isAuthenticated} 
+          checkAuthStatus={checkAuthStatus}
+        />
       )}
+      
       <Routes>
         <Route 
           path="/login" 

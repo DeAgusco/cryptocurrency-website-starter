@@ -17,7 +17,7 @@ const Trade = () => {
   };
 
   return <section className='section text-darkblue'>
-    <div className='container mx-auto'>
+    <div className='container mx-auto px-4'>
      <h2 className='section-title text-center text-white' data-aos='fade-up' data-aos-offset='200'>Trade securely and market the high growth cryptocurrencies</h2>
     
       <div className='flex flex-col gap-[45px] lg:flex-row' data-aos='fade-up' data-aos-offset='200'>

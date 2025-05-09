@@ -1,11 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Image from '../../assets/img/hero-img.png';
-import {IoIosArrowDroprightCircle} from 'react-icons/io';
+import { IoIosArrowDroprightCircle } from 'react-icons/io';
+import { FaBitcoin, FaEthereum } from 'react-icons/fa';
+import { SiLitecoin, SiRipple, SiDogecoin } from 'react-icons/si';
 import AuthService from '../Services/AuthService';
 
 const Hero = () => {
   const navigate = useNavigate();
+  const [animatedValue, setAnimatedValue] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimatedValue((prev) => {
+        if (prev >= 100) return 0;
+        return prev + 1;
+      });
+    }, 30);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleGetStarted = () => {
     if (AuthService.isAuthenticated()) {
@@ -15,38 +27,198 @@ const Hero = () => {
     }
   };
 
-  return( 
-  <section>
-    <div className='container mx-auto'>
-      <div className='flex flex-col items-center lg:flex-row'>
-        <div className='flex-1'>
-          <div className='bg-white/10 p-1 mb-6 rounded-full pl-1 pr-3 max-w-[365px]' data-aos='fade-down'>
-            <div className='flex items-center justify-between text-sm lg:text-base'>
-              <div className='bg-white text-darkblue rounded-full font-medium py-1 px-4'>SAVE 75%</div>
-              <div>On Transaction Fees</div>
+  return (
+    <section className="relative pt-28 pb-10 px-3 min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-b from-[#0f172a] to-[#131b2e]">
+      {/* Reduced particle background */}
+      <div className="absolute inset-0 z-0">
+        {[...Array(10)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: Math.random() * 4 + 2 + 'px',
+              height: Math.random() * 4 + 2 + 'px',
+              left: Math.random() * 100 + '%',
+              top: Math.random() * 100 + '%',
+              backgroundColor: `rgba(${Math.random() * 100 + 155}, ${Math.random() * 100 + 155}, ${Math.random() * 255}, ${Math.random() * 0.3 + 0.1})`,
+              boxShadow: `0 0 ${Math.random() * 10 + 5}px rgba(${Math.random() * 100 + 155}, ${Math.random() * 100 + 155}, ${Math.random() * 255}, 0.5)`,
+              animation: `float ${Math.random() * 20 + 15}s linear infinite`,
+              animationDelay: `-${Math.random() * 10}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Reduced floating crypto icons - just 3 instead of 5 */}
+      <div className="absolute z-0 opacity-5 top-20 left-10 text-6xl text-blue-300 animate-float-slow">
+        <FaBitcoin />
+      </div>
+      <div className="absolute z-0 opacity-5 bottom-20 right-10 text-5xl text-purple-300 animate-float-medium">
+        <FaEthereum />
+      </div>
+      <div className="absolute z-0 opacity-5 top-1/3 right-1/4 text-4xl text-cyan-300 animate-float-fast">
+        <SiLitecoin />
+      </div>
+
+      <div className="container mx-auto px-4 z-10">
+        <div className="flex flex-col-reverse lg:flex-row items-center justify-between gap-12">
+          {/* Left Column - Text Content */}
+          <div className="w-full lg:w-1/2 space-y-8">
+            {/* Animated Promo Badge */}
+            <div 
+              className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 backdrop-blur-xl p-1 rounded-full pl-1 pr-3 max-w-[365px] border border-blue-500/30"
+              data-aos="fade-right"
+            >
+              <div className="flex items-center justify-between text-sm lg:text-base">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium py-1 px-4">
+                  SAVE 75%
+                </div>
+                <div className="text-blue-300">On Transaction Fees</div>
+              </div>
+            </div>
+
+            {/* Main Headline with Gradient Text */}
+            <h1 
+              className="text-4xl lg:text-6xl xl:text-7xl font-bold leading-tight"
+              data-aos="fade-right" 
+              data-aos-delay="100"
+            >
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-purple-400">
+                Trade Crypto
+              </span>
+              <br />
+              <span className="text-white">
+                Like Never Before
+              </span>
+            </h1>
+
+            {/* Description with Glassmorphism Card */}
+            <div 
+              className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 max-w-lg shadow-xl"
+              data-aos="fade-up" 
+              data-aos-delay="200"
+            >
+              <p className="text-blue-50 leading-relaxed">
+                Buy and sell cryptocurrencies with ease on our secure platform, trusted by over 10M wallets 
+                with more than <span className="text-blue-400 font-medium">${(1 + animatedValue / 100).toFixed(2)}B</span> in transactions daily.
+              </p>
+            </div>
+
+            {/* CTA Button */}
+            <div className="flex flex-col sm:flex-row gap-4" data-aos="fade-up" data-aos-delay="300">
+              <button 
+                onClick={handleGetStarted}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 flex items-center justify-center group shadow-lg shadow-blue-600/20"
+              >
+                <span>Get started for free</span>
+                <IoIosArrowDroprightCircle className="text-2xl ml-2 group-hover:translate-x-1 transition-transform" />
+              </button>
+              
+              <button 
+                onClick={() => navigate('/prices')}
+                className="bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white border border-white/10 font-medium py-4 px-8 rounded-xl transition-all duration-300"
+              >
+                View Live Prices
+              </button>
+            </div>
+
+            {/* Live Stats Indicator */}
+            <div 
+              className="flex items-center space-x-4 text-sm text-blue-300"
+              data-aos="fade-up" 
+              data-aos-delay="400"
+            >
+              <div className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
+                <span>Live Trading</span>
+              </div>
+              <div className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                <span>24/7 Support</span>
+              </div>
+              <div className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-purple-500 mr-2"></div>
+                <span>Secure Storage</span>
+              </div>
             </div>
           </div>
-          <div>
-            <h1 className='text-[32px] lg:text-[64px] font-bold leading-tight mb-6' data-aos='fade-down'>Fastest and secure platform to invest in crypto.</h1>
-            <p className='max-w-[440px] leading-relaxed mb-8' data-aos='fade-down'>Buy and sell cryptocurrencies, trusted by 10M wallets with over
-              $1B in transactions.
-            </p>
-            <button 
-              onClick={handleGetStarted} 
-              className='btn gap-x-6 pl-6 text-sm lg:h-16 lg:text-base' 
-              data-aos='fade-down'
-            >
-              Get started for free <IoIosArrowDroprightCircle className='text-2xl lg:text-3xl'/>
-            </button>
+
+          {/* Right Column - 3D Crypto Visualization */}
+          <div className="w-full lg:w-1/2" data-aos="zoom-in" data-aos-delay="300">
+            <div className="relative">
+              {/* Reduced glowing effect */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-blue-500/20 rounded-full blur-[100px]"></div>
+              
+              {/* Dashboard card */}
+              <div className="relative bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-xl p-8 rounded-3xl border border-white/10 shadow-xl">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Price Cards */}
+                  {['Bitcoin', 'Ethereum', 'Litecoin', 'Ripple'].map((coin, index) => (
+                    <div 
+                      key={coin}
+                      className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col"
+                      style={{ animationDelay: `${index * 0.2}s` }}
+                      data-aos="fade-up"
+                    >
+                      <div className="flex items-center mb-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center mr-2">
+                          {index === 0 && <FaBitcoin />}
+                          {index === 1 && <FaEthereum />}
+                          {index === 2 && <SiLitecoin />}
+                          {index === 3 && <SiRipple />}
+                        </div>
+                        <span className="text-sm text-white">{coin}</span>
+                      </div>
+                      <div className="text-xl font-bold text-white">
+                        ${(Math.random() * 10000 + 1000).toFixed(2)}
+                      </div>
+                      <div className={`text-xs ${index % 2 === 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {index % 2 === 0 ? '+' : '-'}{(Math.random() * 5 + 1).toFixed(2)}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Chart Visualization - simplified */}
+                <div className="mt-6 h-40 bg-white/5 rounded-xl border border-white/10 p-4 relative overflow-hidden">
+                  <div className="h-full w-full flex items-end">
+                    {[...Array(12)].map((_, i) => {
+                      const height = 30 + Math.sin(i * 0.5 + animatedValue * 0.05) * 25;
+                      return (
+                        <div 
+                          key={i} 
+                          className="flex-1 mx-px bg-gradient-to-t from-blue-500 to-purple-500"
+                          style={{ height: `${height}%` }}
+                        ></div>
+                      );
+                    })}
+                  </div>
+                  <div className="absolute bottom-4 right-4 text-xs text-blue-300 bg-black/30 rounded-full px-2 py-1">
+                    BTC/USD
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-4 flex justify-between">
+                  <button 
+                    onClick={() => navigate('/dashboard')}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 px-4 rounded-lg text-sm"
+                  >
+                    Trade Now
+                  </button>
+                  <button 
+                    onClick={() => navigate('/wallet')}
+                    className="bg-white/5 text-white border border-white/10 py-2 px-4 rounded-lg text-sm"
+                  >
+                    View Portfolio
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          </div>
-          <div className='flex-1' data-aos='fade-up'>
-            <img src={Image} alt='hero'/>
-          </div>
-        
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
   );
 };
 

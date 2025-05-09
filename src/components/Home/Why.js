@@ -3,7 +3,7 @@ import Image from '../../assets/img/why-img.png';
 
 const Why = () => {
   return <section>
-    <div className='container mx-auto flex flex-col items-center lg:flex-row'>
+    <div className='container mx-auto flex flex-col items-center lg:flex-row px-4'>
       <div className='flex-1' data-aos='fade-left' >
         <img src={Image} alt='why'/>
       </div>

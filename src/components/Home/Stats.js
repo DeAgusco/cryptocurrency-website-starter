@@ -4,7 +4,7 @@ import {HiChartBar, HiUser, HiGlobe} from 'react-icons/hi';
 const Stats = () => {
   return (
   <section>
-    <div className='container mx-auto py-20'>
+    <div className='container mx-auto py-20 px-4'>
       <div className='flex flex-col items-center'>
         <h1 className='text-[32px] lg:text-[64px] font-bold leading-tight mb-6' data-aos='fade-down'>Our platform is designed to help you invest in crypto.</h1>
         <p className='max-w-[440px] text-center leading-relaxed mb-8' data-aos='fade-down'>Buy and sell cryptocurrencies, trusted by 10M wallets with over $1B in transactions.</p>

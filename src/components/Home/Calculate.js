@@ -3,7 +3,7 @@ import React from 'react';
 const Calculate = () => {
   return (
     <section className='mt-3'>
-      <div className='container mx-auto'>
+      <div className='container mx-auto px-4'>
         <div className='flex flex-col justify-center text-center'>
           <h2 className='text-[32px] lg:text-[64px] font-bold leading-tight mb-6' data-aos='fade-down'>
             Check how much you can earn
