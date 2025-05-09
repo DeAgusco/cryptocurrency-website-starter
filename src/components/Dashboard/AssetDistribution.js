@@ -29,80 +29,82 @@ const AssetDistribution = ({ walletData }) => {
   const [selectedView, setSelectedView] = useState('doughnut'); // 'doughnut', 'bar', 'list'
 
   useEffect(() => {
-    prepareAssetDistributionData();
-  }, [walletData]);
+    const prepareAssetDistributionData = () => {
+      if (!walletData || !walletData.other_wallet_balances) {
+        const emptyData = {
+          labels: ['No Data'],
+          datasets: [{
+            data: [1],
+            backgroundColor: ['rgba(75, 85, 99, 0.5)'],
+            borderColor: ['rgba(75, 85, 99, 0.8)'],
+            borderWidth: 1,
+            hoverOffset: 4
+          }]
+        };
+        setChartData(emptyData);
+        setAssetDetails([]);
+        return;
+      }
 
-  const prepareAssetDistributionData = () => {
-    if (!walletData || !walletData.other_wallet_balances) {
-      const emptyData = {
-        labels: ['No Data'],
+      // Create stylish gradient colors
+      const generateBackgroundColor = (index, total) => {
+        const hue = (index / total) * 360;
+        return `hsla(${hue}, 80%, 60%, 0.8)`;
+      };
+
+      const generateBorderColor = (index, total) => {
+        const hue = (index / total) * 360;
+        return `hsla(${hue}, 90%, 50%, 1)`;
+      };
+
+      // Extract data
+      const entries = Object.entries(walletData.other_wallet_balances);
+      const filteredEntries = entries.filter(([_, value]) => parseFloat(value) > 0);
+      
+      // Sort by value (balance) from highest to lowest
+      filteredEntries.sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]));
+      
+      const labels = filteredEntries.map(([key]) => key);
+      const data = filteredEntries.map(([_, value]) => parseFloat(value));
+      
+      // Calculate total for percentage
+      const total = data.reduce((acc, curr) => acc + curr, 0);
+      
+      // Prepare detailed asset information
+      const details = filteredEntries.map(([key, value], index) => {
+        const balance = parseFloat(value);
+        const percentage = (balance / total) * 100;
+        
+        return {
+          symbol: key,
+          balance,
+          percentage,
+          backgroundColor: generateBackgroundColor(index, filteredEntries.length),
+          borderColor: generateBorderColor(index, filteredEntries.length)
+        };
+      });
+      
+      setAssetDetails(details);
+
+      const chartDataObject = {
+        labels,
         datasets: [{
-          data: [1],
-          backgroundColor: ['rgba(75, 85, 99, 0.5)'],
-          borderColor: ['rgba(75, 85, 99, 0.8)'],
-          borderWidth: 1,
-          hoverOffset: 4
+          data,
+          backgroundColor: details.map(item => item.backgroundColor),
+          borderColor: details.map(item => item.borderColor),
+          borderWidth: 2,
+          hoverOffset: 15,
+          hoverBorderWidth: 3
         }]
       };
-      setChartData(emptyData);
-      setAssetDetails([]);
-      return;
-    }
-
-    // Create stylish gradient colors
-    const generateBackgroundColor = (index, total) => {
-      const hue = (index / total) * 360;
-      return `hsla(${hue}, 80%, 60%, 0.8)`;
-    };
-
-    const generateBorderColor = (index, total) => {
-      const hue = (index / total) * 360;
-      return `hsla(${hue}, 90%, 50%, 1)`;
-    };
-
-    // Extract data
-    const entries = Object.entries(walletData.other_wallet_balances);
-    const filteredEntries = entries.filter(([_, value]) => parseFloat(value) > 0);
-    
-    // Sort by value (balance) from highest to lowest
-    filteredEntries.sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]));
-    
-    const labels = filteredEntries.map(([key]) => key);
-    const data = filteredEntries.map(([_, value]) => parseFloat(value));
-    
-    // Calculate total for percentage
-    const total = data.reduce((acc, curr) => acc + curr, 0);
-    
-    // Prepare detailed asset information
-    const details = filteredEntries.map(([key, value], index) => {
-      const balance = parseFloat(value);
-      const percentage = (balance / total) * 100;
       
-      return {
-        symbol: key,
-        balance,
-        percentage,
-        backgroundColor: generateBackgroundColor(index, filteredEntries.length),
-        borderColor: generateBorderColor(index, filteredEntries.length)
-      };
-    });
-    
-    setAssetDetails(details);
-
-    const chartDataObject = {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: details.map(item => item.backgroundColor),
-        borderColor: details.map(item => item.borderColor),
-        borderWidth: 2,
-        hoverOffset: 15,
-        hoverBorderWidth: 3
-      }]
+      setChartData(chartDataObject);
     };
-    
-    setChartData(chartDataObject);
-  };
+
+    if (walletData) {
+      prepareAssetDistributionData();
+    }
+  }, [walletData]);
 
   const handleChartHover = (event, chartElements) => {
     if (chartElements.length > 0) {

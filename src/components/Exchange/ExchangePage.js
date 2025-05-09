@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon, XrpIcon, TrxIcon } from '../Auth/CoinIcons';
 import ExchangeService from '../Services/ExchangeService';
-import BalanceCard from '../Dashboard/BalanceCard';
 import DashboardService from '../Services/DashboardService';
 
 // Helper for responsive price formatting
@@ -61,8 +60,6 @@ const ExchangePage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [priceData, setPriceData] = useState(null);
-  const [priceLoading, setPriceLoading] = useState(true);
 
   const toggleBalance = () => {
     setShowBalance(!showBalance);
@@ -144,7 +141,7 @@ const ExchangePage = () => {
           fromAmount: amount,
           toAmount: estimatedAmount
         };
-        const response = await ExchangeService.executeExchange(payload);
+        /*const response =*/ await ExchangeService.executeExchange(payload);
         setIsSuccess(true);
         // Update balances
         const newData = await ExchangeService.getExchangeInfo(fromCoin, toCoin);
@@ -163,22 +160,6 @@ const ExchangePage = () => {
       setError('Invalid amount for exchange');
     }
   };
-
-  useEffect(() => {
-    const fetchPriceData = async () => {
-      try {
-        const data = await ExchangeService.getPriceData(toCoin);
-        setPriceData(data);
-      } catch (error) {
-        console.error('Error fetching price data:', error);
-        setError('Failed to fetch price data. Please try again later.');
-      } finally {
-        setPriceLoading(false);
-      }
-    };
-
-    fetchPriceData();
-  }, [toCoin]);
 
   // Get price information for coins
   const [coinPrices, setCoinPrices] = useState({});

@@ -1,7 +1,6 @@
 // Dashboard.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import RecentTransactions from './RecentTransactions';
 import AssetDistribution from './AssetDistribution';
 import ReceiveModal from './ReceiveModal';
 import SendModal from './SendModal';
@@ -45,14 +44,6 @@ const SkeletonTransactionItem = () => (
     <div className="w-16 sm:w-20">
       <SkeletonTextLine width="w-full" height="h-3 sm:h-4" className="mb-2" />
       <SkeletonTextLine width="w-2/3" height="h-2 sm:h-3" />
-    </div>
-  </div>
-);
-
-const SkeletonChart = ({ height = 'h-48 sm:h-64' }) => (
-  <div className={`relative ${height} rounded-xl overflow-hidden animate-pulse bg-white/5`}>
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-24 sm:w-32 h-24 sm:h-32 rounded-full bg-white/10"></div>
     </div>
   </div>
 );

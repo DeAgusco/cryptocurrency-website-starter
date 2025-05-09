@@ -419,16 +419,12 @@ const SwapModal = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (amount && exchangeRate !== null) {
-      let rateForCalc = exchangeRate;
-      const actualEstimated = (parseFloat(amount) * exchangeRate).toFixed(8);
-
       if (displayExchangeRate !== null) {
         const displayEstimated = (parseFloat(amount) * displayExchangeRate).toFixed(8);
         setEstimatedAmount(displayEstimated);
       } else {
         setEstimatedAmount(null);
       }
-
     } else {
       setEstimatedAmount(null);
     }

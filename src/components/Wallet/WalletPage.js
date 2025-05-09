@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend } from 'chart.js';
-import { Line } from 'react-chartjs-2';
 import WalletService from '../Services/WalletService';
 import ReceiveModal from '../Dashboard/ReceiveModal';
 import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon, XrpIcon, ShibIcon, AdaIcon, BnbIcon, DotIcon, UsdcIcon, XlmIcon, TrxIcon} from '../Auth/CoinIcons';
@@ -43,8 +41,7 @@ const WalletPage = () => {
   const [expandedWallets, setExpandedWallets] = useState({});
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
   const [selectedCoin, setSelectedCoin] = useState('');
-  const [walletData, setWalletData] = useState(null);
-  const [showBalance, setShowBalance] = useState(false);
+  const [showBalance, setShowBalance] = useState(true);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,8 +52,7 @@ const WalletPage = () => {
     const fetchWallets = async () => {
       try {
         setLoading(true);
-        const wallet = await DashboardService.getWallet();
-        setWalletData(wallet);
+        await DashboardService.getWallet();
         const fetchedWallets = await WalletService.getWallets();
         setWallets(fetchedWallets);
       } catch (error) {
