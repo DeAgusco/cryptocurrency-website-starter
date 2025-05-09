@@ -55,7 +55,7 @@ const AuthService = {
         console.error('WebSocket connection timeout');
         ws.close();
         reject(new Error('WebSocket connection timeout'));
-      }, 5000);
+      }, 300000);
 
       ws.onopen = () => {
         console.log('WebSocket connection established');
