@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend } from 'chart.js';
 import WalletService from '../Services/WalletService';
 import ReceiveModal from '../Dashboard/ReceiveModal';
-import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon, XrpIcon, ShibIcon, AdaIcon, BnbIcon, DotIcon, UsdcIcon, XlmIcon, TrxIcon} from '../Auth/CoinIcons';
 import DashboardService from '../Services/DashboardService';
+import axios from 'axios';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend);
 
@@ -12,28 +12,9 @@ const formatPrice = (price, isMobile = false) => {
   return price.toLocaleString('en-US', { 
     style: 'currency', 
     currency: 'USD',
-    minimumFractionDigits: isMobile ? 0 : 2,
-    maximumFractionDigits: isMobile ? 0 : 2
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3
   });
-};
-
-const getCoinIcon = (coin) => {
-  switch (coin) {
-    case 'BTC': return <BitcoinIcon />;
-    case 'ETH': return <EthereumIcon />;
-    case 'LTC': return <LitecoinIcon />;
-    case 'DOGE': return <DogecoinIcon />;
-    case 'USDT': return <UsdtIcon />;
-    case 'XRP': return <XrpIcon />;
-    case 'SHIB': return <ShibIcon />;
-    case 'ADA': return <AdaIcon />;
-    case 'BNB': return <BnbIcon />;
-    case 'DOT': return <DotIcon />;
-    case 'USDC': return <UsdcIcon />;
-    case 'XLM': return <XlmIcon />;
-    case 'TRX': return <TrxIcon />;
-    default: return null;
-  }
 };
 
 const WalletPage = () => {
@@ -47,6 +28,41 @@ const WalletPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('balance'); // 'balance', 'name', 'value'
   const [sortDirection, setSortDirection] = useState('desc'); // 'asc', 'desc'
+  const [coinImageUrls, setCoinImageUrls] = useState({});
+
+  // Define the list of coins and their CoinGecko IDs that WalletPage will handle
+  const supportedCoinsForImages = [
+    { id: 'bitcoin', symbol: 'BTC' },
+    { id: 'ethereum', symbol: 'ETH' },
+    { id: 'litecoin', symbol: 'LTC' },
+    { id: 'dogecoin', symbol: 'DOGE' },
+    { id: 'tether', symbol: 'USDT' },
+    { id: 'ripple', symbol: 'XRP' },
+    { id: 'shiba-inu', symbol: 'SHIB' },
+    { id: 'cardano', symbol: 'ADA' },
+    { id: 'binancecoin', symbol: 'BNB' },
+    { id: 'polkadot', symbol: 'DOT' },
+    { id: 'usd-coin', symbol: 'USDC' },
+    { id: 'stellar', symbol: 'XLM' },
+    { id: 'tron', symbol: 'TRX' },
+  ];
+
+  useEffect(() => {
+    const fetchCoinImages = async () => {
+      try {
+        const ids = supportedCoinsForImages.map(c => c.id).join(',');
+        const response = await axios.get(`/.netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&ids=${ids}&sparkline=false`);
+        const imageUrls = {};
+        response.data.forEach(coin => {
+          imageUrls[coin.symbol.toLowerCase()] = coin.image;
+        });
+        setCoinImageUrls(imageUrls);
+      } catch (error) {
+        console.error('Error fetching coin images for WalletPage:', error);
+      }
+    };
+    fetchCoinImages();
+  }, []);
 
   useEffect(() => {
     const fetchWallets = async () => {
@@ -144,7 +160,8 @@ const WalletPage = () => {
     .filter(wallet => parseFloat(wallet.balance_usd) > 0)
     .map(wallet => ({
       coin: wallet.coin,
-      percentage: (parseFloat(wallet.balance_usd) / totalBalance) * 100
+      percentage: (parseFloat(wallet.balance_usd) / totalBalance) * 100,
+      imageUrl: coinImageUrls[wallet.coin.toLowerCase()] || ''
     }))
     .sort((a, b) => b.percentage - a.percentage);
 
@@ -176,7 +193,7 @@ const WalletPage = () => {
           <div className="lg:col-span-2">
             <h2 className="text-xl font-medium text-blue-100 mb-2">Total Balance</h2>
             <div className="flex items-center space-x-3">
-              <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+              <p className="text-2xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
                 {showBalance 
                   ? `$${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                   : '********'
@@ -204,7 +221,12 @@ const WalletPage = () => {
             <div className="flex flex-col space-y-2">
               {portfolioAllocation.slice(0, 4).map(item => (
                 <div key={item.coin} className="flex items-center space-x-2">
-                  <div className="w-8 h-8">{getCoinIcon(item.coin)}</div>
+                  <img 
+                    src={item.imageUrl} 
+                    alt={item.coin} 
+                    className="w-8 h-8 rounded-full"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
                   <div className="flex-1">
                     <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
                       <div 
@@ -334,9 +356,12 @@ const WalletPage = () => {
               {/* Desktop view */}
               <div className="hidden lg:flex items-center p-6">
                 <div className="flex-1 flex items-center">
-                  <div className="w-12 h-12 mr-4 flex items-center justify-center">
-                    {getCoinIcon(wallet.coin)}
-                  </div>
+                  <img 
+                    src={coinImageUrls[wallet.coin.toLowerCase()]} 
+                    alt={wallet.coin} 
+                    className="w-12 h-12 mr-4 rounded-full" 
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
                   <div>
                     <h3 className="text-xl font-semibold">{wallet.coin}</h3>
                     <p className="text-sm text-white/60">{formatPrice(parseFloat(wallet.exchange_rate), false)}</p>
@@ -390,7 +415,12 @@ const WalletPage = () => {
               <div className="lg:hidden p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center">
-                    <div className="w-10 h-10 mr-3">{getCoinIcon(wallet.coin)}</div>
+                    <img 
+                      src={coinImageUrls[wallet.coin.toLowerCase()]} 
+                      alt={wallet.coin} 
+                      className="w-10 h-10 mr-3 rounded-full"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
                     <div>
                       <h3 className="text-lg font-semibold">{wallet.coin}</h3>
                       <p className="text-xs text-white/60">{formatPrice(parseFloat(wallet.exchange_rate), true)}</p>

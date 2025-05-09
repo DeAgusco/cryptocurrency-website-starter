@@ -16,8 +16,8 @@ const formatPrice = (price, isMobile = false) => {
   return price.toLocaleString('en-US', { 
     style: 'currency', 
     currency: 'USD',
-    minimumFractionDigits: isMobile ? 0 : 2,
-    maximumFractionDigits: isMobile ? 0 : 2
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3
   });
 };
 
@@ -87,6 +87,7 @@ const Dashboard = () => {
   const [selectedCoin, setSelectedCoin] = useState(null);
   const [visibleCoinsCount, setVisibleCoinsCount] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
+  const [coinImagesMap, setCoinImagesMap] = useState({});
   
   const getDisplayPrice = (coin) => {
     if (coin && coin.symbol && coin.symbol.toLowerCase() === 'xrp') {
@@ -113,6 +114,12 @@ const Dashboard = () => {
           (async () => {
             const response = await axios.get('/.netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=true');
             setCoins(response.data);
+            // Create a map of symbol to image URL
+            const imagesMap = {};
+            response.data.forEach(c => {
+              imagesMap[c.symbol.toLowerCase()] = c.image;
+            });
+            setCoinImagesMap(imagesMap);
           })(),
           (async () => {
             const trendingResponse = await axios.get('/.netlify/functions/coinGeckoProx?path=search/trending');
@@ -124,11 +131,13 @@ const Dashboard = () => {
                 // Use actual price if available, otherwise default or what was there
                 current_price: parseFloat(priceData?.price || priceData?.price_usd || coin.item.current_price || 0),
                 price_change_percentage_24h: parseFloat(priceData?.price_change_percentage_24h?.usd || coin.item.price_change_percentage_24h || 0),
-                // Ensure coin_id exists for sparkline URL
-                coin_id: coin.item.id 
+                // Ensure coin_id exists for sparkline URL (though we'll prefer the direct sparkline URL now)
+                coin_id: coin.item.id,
+                sparkline: coin.item.data?.sparkline // Corrected path to sparkline URL
               };
             });
             setTrendingCoins(trendingCoinsData);
+            console.log('Trending coins with sparkline URLs:', trendingCoinsData.map(c => ({ name: c.name, sparkline_url: c.sparkline })));
           })(),
           (async () => {
             const wallet = await DashboardService.getWallet();
@@ -220,68 +229,72 @@ const Dashboard = () => {
         <div className="absolute -top-12 -left-12 w-32 sm:w-56 h-32 sm:h-56 bg-purple-500/10 rounded-full blur-3xl"></div>
         
         {/* Desktop view for balance section */}
-        {dashboardLoading ? (
-          <SkeletonBalanceDisplay />
-        ) : (
-          <div className="hidden sm:block relative z-10">
-            <h2 className="text-xl font-medium text-blue-100 mb-2">Total Balance</h2>
-            <div className="flex items-center space-x-3">
-              <p className="text-4xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-                {showBalance 
-                  ? walletData?.balance?.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
-                  : '********'
-                }
-              </p>
-              <button 
-                onClick={toggleBalance}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                {showBalance ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
+        <div className="hidden sm:block">
+          {dashboardLoading ? (
+            <SkeletonBalanceDisplay />
+          ) : (
+            <div className="relative z-10">
+              <h2 className="text-xl font-medium text-blue-100 mb-2">Total Balance</h2>
+              <div className="flex items-center space-x-3">
+                <p className="text-4xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                  {showBalance 
+                    ? walletData?.balance?.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
+                    : '********'
+                  }
+                </p>
+                <button 
+                  onClick={toggleBalance}
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  {showBalance ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Mobile view for balance section - simplified for smaller screens */}
-        {dashboardLoading ? (
-          <SkeletonBalanceDisplay />
-        ) : (
-          <div className="sm:hidden relative z-10">
-            <h2 className="text-base font-medium text-blue-100 mb-2">Total Balance</h2>
-            <div className="flex items-center space-x-2">
-              <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-                {showBalance 
-                  ? walletData?.balance?.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
-                  : '********'
-                }
-              </p>
-              <button 
-                onClick={toggleBalance}
-                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                {showBalance ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
+        <div className="sm:hidden">
+          {dashboardLoading ? (
+            <SkeletonBalanceDisplay />
+          ) : (
+            <div className="relative z-10">
+              <h2 className="text-base font-medium text-blue-100 mb-2">Total Balance</h2>
+              <div className="flex items-center space-x-2">
+                <p className="text-xl lg:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                  {showBalance 
+                    ? walletData?.balance?.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+                    : '********'
+                  }
+                </p>
+                <button 
+                  onClick={toggleBalance}
+                  className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  {showBalance ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -389,7 +402,7 @@ const Dashboard = () => {
             </div>
           </div>
         ) : (
-          <AssetDistribution walletData={adjustedWalletDataForChart} />
+          <AssetDistribution walletData={adjustedWalletDataForChart} coinImagesMap={coinImagesMap} />
         )}
 
         {/* Recent Transactions with modern styling */}
@@ -400,9 +413,6 @@ const Dashboard = () => {
           <div className="relative z-10">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold text-white">Recent Transactions</h2>
-              <button className="text-blue-400 text-sm hover:text-blue-300 transition-colors">
-                View All
-              </button>
             </div>
             
             {dashboardLoading ? (
@@ -444,7 +454,7 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-10 text-white/50 bg-white/5 rounded-xl">
+              <div className="text-center py-10 px-2 text-white/50 bg-white/5 rounded-xl">
                 <svg className="w-16 h-16 mx-auto text-white/20 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                 </svg>
@@ -517,11 +527,11 @@ const Dashboard = () => {
                 
                 {/* Price chart sparkline */}
                 <div className="mt-3 sm:mt-4 h-12 sm:h-16 w-full overflow-hidden">
-                  {coin.sparkline_in_7d?.price ? (
+                  {coin.sparkline ? (
                     <img 
-                      src={`https://www.coingecko.com/coins/${coin.coin_id}/sparkline`} 
+                      src={coin.sparkline} 
                       alt={`${coin.name} 7d chart`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <div className="w-full h-full bg-white/5 rounded-md flex items-center justify-center">

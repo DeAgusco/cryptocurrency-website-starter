@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon, XrpIcon, TrxIcon } from '../Auth/CoinIcons';
 import ExchangeService from '../Services/ExchangeService';
 import DashboardService from '../Services/DashboardService';
+import axios from 'axios';
 
 // Helper for responsive price formatting
 const formatPrice = (price, isMobile = false) => {
@@ -11,19 +11,6 @@ const formatPrice = (price, isMobile = false) => {
     minimumFractionDigits: isMobile ? 0 : 2,
     maximumFractionDigits: isMobile ? 0 : 2
   });
-};
-
-const getCoinIcon = (coinType) => {
-  switch (coinType) {
-    case 'BTC': return <BitcoinIcon />;
-    case 'ETH': return <EthereumIcon />;
-    case 'LTC': return <LitecoinIcon />;
-    case 'DOGE': return <DogecoinIcon />;
-    case 'USDT': return <UsdtIcon />;
-    case 'XRP': return <XrpIcon />;
-    case 'TRX': return <TrxIcon />;
-    default: return null;
-  }
 };
 
 // Our predefined coin data
@@ -60,6 +47,7 @@ const ExchangePage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [coinImages, setCoinImages] = useState({});
 
   const toggleBalance = () => {
     setShowBalance(!showBalance);
@@ -165,25 +153,35 @@ const ExchangePage = () => {
   const [coinPrices, setCoinPrices] = useState({});
 
   useEffect(() => {
-    const fetchAllCoinPrices = async () => {
+    const fetchAllCoinData = async () => {
       try {
+        const coinIds = coinData.map(c => c.id).join(',');
+        // Fetch market data including images
+        const response = await axios.get(`/.netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&ids=${coinIds}&sparkline=false`);
         const prices = {};
-        for (const coin of coinData) {
-          try {
-            const data = await ExchangeService.getPriceData(coin.symbol);
-            prices[coin.symbol.toLowerCase()] = data?.price || 0;
-          } catch (error) {
-            console.error(`Error fetching price for ${coin.symbol}:`, error);
-            prices[coin.symbol.toLowerCase()] = 0;
-          }
-        }
+        const images = {};
+        response.data.forEach(coinMarketData => {
+          const symbolLower = coinMarketData.symbol.toLowerCase();
+          prices[symbolLower] = coinMarketData.current_price || 0;
+          images[symbolLower] = coinMarketData.image || ''; // Store image URL
+        });
         setCoinPrices(prices);
+        setCoinImages(images); // Set images state
       } catch (error) {
-        console.error('Error fetching coin prices:', error);
+        console.error('Error fetching coin data:', error);
+        const defaultPrices = {};
+        const defaultImages = {};
+        coinData.forEach(c => {
+          const symbolLower = c.symbol.toLowerCase();
+          defaultPrices[symbolLower] = 0;
+          defaultImages[symbolLower] = ''; // Default to empty string for image
+        });
+        setCoinPrices(defaultPrices);
+        setCoinImages(defaultImages);
       }
     };
 
-    fetchAllCoinPrices();
+    fetchAllCoinData(); // Renamed function
   }, []);
 
   // Calculate values in USD for display, applying adjustments for XRP/TRX
@@ -254,7 +252,6 @@ const ExchangePage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
               {/* From Currency */}
               <div className="lg:col-span-2">
-                <h2 className="text-xl font-medium text-white mb-4">From</h2>
                 <div className="relative mb-4">
                   <select
                     value={fromCoin}
@@ -281,7 +278,13 @@ const ExchangePage = () => {
                     className="w-full py-3 px-4 bg-white/5 text-white rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 pr-12"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <div className="w-7 h-7">{getCoinIcon(fromCoin)}</div>
+                    <div className="w-7 h-7">
+                      {coinImages[fromCoin?.toLowerCase()] ? (
+                        <img src={coinImages[fromCoin?.toLowerCase()]} alt={fromCoin} className="w-7 h-7 rounded-full" onError={(e) => { e.target.style.display = 'none'; }} />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-white/10"></div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -299,15 +302,17 @@ const ExchangePage = () => {
                   onClick={handleSwap}
                   className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 hover:from-blue-500/30 hover:to-purple-500/30 flex items-center justify-center border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/20"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400 hidden lg:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7M19 14l-7 7-7-7" />
                   </svg>
                 </button>
               </div>
 
               {/* To Currency */}
               <div className="lg:col-span-2">
-                <h2 className="text-xl font-medium text-white mb-4">To</h2>
                 <div className="relative mb-4">
                   <select
                     value={toCoin}
@@ -333,7 +338,13 @@ const ExchangePage = () => {
                     className="w-full py-3 px-4 bg-white/5 text-white rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 pr-12"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <div className="w-7 h-7">{getCoinIcon(toCoin)}</div>
+                    <div className="w-7 h-7">
+                      {coinImages[toCoin?.toLowerCase()] ? (
+                        <img src={coinImages[toCoin?.toLowerCase()]} alt={toCoin} className="w-7 h-7 rounded-full" onError={(e) => { e.target.style.display = 'none'; }} />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-white/10"></div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -351,15 +362,19 @@ const ExchangePage = () => {
               <div className="mt-8 p-4 bg-gradient-to-br from-white/5 to-white/10 rounded-xl border border-white/10">
                 <div className="flex items-center justify-center space-x-4">
                   <div className="flex items-center">
-                    <div className="w-6 h-6 mr-2">{getCoinIcon(fromCoin)}</div>
-                    <span>1 {fromCoin}</span>
+                    {coinImages[fromCoin?.toLowerCase()] && (
+                      <img src={coinImages[fromCoin?.toLowerCase()]} alt={fromCoin} className="hidden lg:block w-6 h-6 mr-2 rounded-full" onError={(e) => { e.target.style.display = 'none'; }} />
+                    )}
+                    <span className="text-white/60 mx-2">1 {fromCoin}</span>
                   </div>
                   <svg className="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                   <div className="flex items-center">
-                    <span>{exchangeRate.toFixed(8)} {toCoin}</span>
-                    <div className="w-6 h-6 ml-2">{getCoinIcon(toCoin)}</div>
+                    <span className="text-white/60 mx-2">{exchangeRate.toFixed(3)} {toCoin}</span>
+                    {coinImages[toCoin?.toLowerCase()] && (
+                      <img src={coinImages[toCoin?.toLowerCase()]} alt={toCoin} className="hidden lg:block w-6 h-6 mx-2 rounded-full" onError={(e) => { e.target.style.display = 'none'; }} />
+                    )}
                   </div>
                 </div>
               </div>

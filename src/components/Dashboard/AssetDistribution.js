@@ -1,27 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Doughnut } from 'react-chartjs-2';
-import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon, XrpIcon, ShibIcon, AdaIcon, BnbIcon, DotIcon, UsdcIcon, XlmIcon, TrxIcon } from '../Auth/CoinIcons';
 
-const getCoinIcon = (coin) => {
-  switch (coin.toUpperCase()) {
-    case 'BTC': return <BitcoinIcon />;
-    case 'ETH': return <EthereumIcon />;
-    case 'LTC': return <LitecoinIcon />;
-    case 'DOGE': return <DogecoinIcon />;
-    case 'USDT': return <UsdtIcon />;
-    case 'XRP': return <XrpIcon />;
-    case 'SHIB': return <ShibIcon />;
-    case 'ADA': return <AdaIcon />;
-    case 'BNB': return <BnbIcon />;
-    case 'DOT': return <DotIcon />;
-    case 'USDC': return <UsdcIcon />;
-    case 'XLM': return <XlmIcon />;
-    case 'TRX': return <TrxIcon />;
-    default: return null;
-  }
-};
-
-const AssetDistribution = ({ walletData }) => {
+const AssetDistribution = ({ walletData, coinImagesMap }) => {
   const [activeAsset, setActiveAsset] = useState(null);
   const [isHovering, setIsHovering] = useState(false);
   const [chartData, setChartData] = useState(null);
@@ -74,13 +54,15 @@ const AssetDistribution = ({ walletData }) => {
       const details = filteredEntries.map(([key, value], index) => {
         const balance = parseFloat(value);
         const percentage = (balance / total) * 100;
-        
+        const imageUrl = coinImagesMap && coinImagesMap[key.toLowerCase()] ? coinImagesMap[key.toLowerCase()] : '';
+
         return {
           symbol: key,
           balance,
           percentage,
           backgroundColor: generateBackgroundColor(index, filteredEntries.length),
-          borderColor: generateBorderColor(index, filteredEntries.length)
+          borderColor: generateBorderColor(index, filteredEntries.length),
+          imageUrl: imageUrl
         };
       });
       
@@ -104,7 +86,7 @@ const AssetDistribution = ({ walletData }) => {
     if (walletData) {
       prepareAssetDistributionData();
     }
-  }, [walletData]);
+  }, [walletData, coinImagesMap]);
 
   const handleChartHover = (event, chartElements) => {
     if (chartElements.length > 0) {
@@ -191,7 +173,11 @@ const AssetDistribution = ({ walletData }) => {
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-10">
                 {isHovering && activeAsset ? (
                   <div className="transition-opacity duration-300">
-                    <div className="w-16 h-16 mx-auto">{getCoinIcon(activeAsset.symbol)}</div>
+                    {activeAsset.imageUrl ? (
+                      <img src={activeAsset.imageUrl} alt={activeAsset.symbol} className="w-16 h-16 mx-auto rounded-full" onError={(e) => { e.target.style.display = 'none'; }} />
+                    ) : (
+                      <div className="w-16 h-16 mx-auto rounded-full bg-white/10 flex items-center justify-center text-white/50 text-xl">{activeAsset.symbol.substring(0,1)}</div>
+                    )}
                     <p className="text-2xl font-bold mt-2">{activeAsset.percentage.toFixed(1)}%</p>
                   </div>
                 ) : (
@@ -216,7 +202,11 @@ const AssetDistribution = ({ walletData }) => {
                     onMouseLeave={() => setActiveAsset(null)}
                   >
                     <div className="w-8 h-8 mr-3 flex-shrink-0">
-                      {getCoinIcon(asset.symbol)}
+                      {asset.imageUrl ? (
+                        <img src={asset.imageUrl} alt={asset.symbol} className="w-full h-full rounded-full" onError={(e) => { e.target.style.display = 'none'; }} />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-white/10 flex items-center justify-center text-white/50 text-sm">{asset.symbol.substring(0,1)}</div>
+                      )}
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between">
@@ -257,7 +247,11 @@ const AssetDistribution = ({ walletData }) => {
                 >
                   <div className="flex items-center mb-2">
                     <div className="w-10 h-10 mr-3">
-                      {getCoinIcon(asset.symbol)}
+                      {asset.imageUrl ? (
+                        <img src={asset.imageUrl} alt={asset.symbol} className="w-full h-full rounded-full" onError={(e) => { e.target.style.display = 'none'; }} />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-white/10 flex items-center justify-center text-white/50 text-lg">{asset.symbol.substring(0,1)}</div>
+                      )}
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold">{asset.symbol}</h3>

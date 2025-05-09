@@ -3,6 +3,18 @@ import Modal from './Modal';
 import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon, XrpIcon, TrxIcon } from '../Auth/CoinIcons';
 import ExchangeService from '../Services/ExchangeService';
 
+// Add global styling to fix option borders
+const globalSelectStyle = document.createElement('style');
+globalSelectStyle.innerHTML = `
+  option {
+    background-color: #352048 !important;
+    color: white !important;
+    border: none !important;
+    outline: none !important;
+  }
+`;
+document.head.appendChild(globalSelectStyle);
+
 const getCoinIcon = (coin) => {
   switch (coin) {
     case 'BTC': return <BitcoinIcon />;
@@ -47,10 +59,16 @@ const Step1 = ({ goToNextStep, coins, fromCoin, setFromCoin, toCoin, setToCoin, 
             value={fromCoin}
             onChange={(e) => setFromCoin(e.target.value)}
             className="w-full py-3 px-4 bg-white/5 text-white rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 appearance-none pr-10"
+            style={{
+              backgroundImage: "none",
+              backgroundColor: "rgba(255, 255, 255, 0.05)"
+            }}
           >
-            <option value="">Select a coin</option>
+            <option value="" style={{ backgroundColor: "#352048", color: "white", border: "none" }}>Select a coin</option>
             {coins.map((coin) => (
-              <option key={coin.id} value={coin.symbol}>{coin.name} ({coin.symbol})</option>
+              <option key={coin.id} value={coin.symbol} style={{ backgroundColor: "#352048", color: "white", border: "none" }}>
+                {coin.name} ({coin.symbol})
+              </option>
             ))}
           </select>
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -90,10 +108,14 @@ const Step1 = ({ goToNextStep, coins, fromCoin, setFromCoin, toCoin, setToCoin, 
             value={toCoin}
             onChange={(e) => setToCoin(e.target.value)}
             className="w-full py-3 px-4 bg-white/5 text-white rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 appearance-none pr-10"
+            style={{
+              backgroundImage: "none",
+              backgroundColor: "rgba(255, 255, 255, 0.05)"
+            }}
           >
-            <option value="">Select a coin</option>
+            <option value="" style={{ backgroundColor: "#352048", color: "white", border: "none" }}>Select a coin</option>
             {coins.filter(coin => coin.symbol !== fromCoin).map((coin) => (
-              <option key={coin.id} value={coin.symbol}>{coin.name} ({coin.symbol})</option>
+              <option key={coin.id} value={coin.symbol} style={{ backgroundColor: "#352048", color: "white", border: "none" }}>{coin.name} ({coin.symbol})</option>
             ))}
           </select>
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">

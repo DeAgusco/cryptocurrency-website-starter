@@ -8,23 +8,28 @@ const ExchangeLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-black to-darkblue">
       {/* Navbar - fixed at top */}
-      <div className="fixed top-0 left-0 right-0 z-40">
+      <div className="fixed top-0 left-0 right-0 z-40 h-16 shadow-lg">
         <Navbar />
       </div>
 
       {/* Main Area Wrapper (for sidebar and content) - Flex container, grows to fill space */}
-      <div className="flex flex-1 pt-16">
-        {/* Desktop Sidebar - sticky, fixed height relative to viewport */}
-        <aside className="hidden lg:block w-64 h-[calc(100vh-4rem)] sticky top-16 self-start z-30">
-          <Sidebar />
-        </aside>
+      <div className="absolute inset-0 pt-16 w-full flex flex-col overflow-x-hidden">
+        
+        {/* 3. Scrollable Viewport: This <main> element is the primary scroll container */}
+        <main className="flex-1 flex flex-row overflow-y-auto">
+          
+          {/* 3a. Desktop Sidebar: Sticky within the scrolling <main>, viewport-based height */}
+          <aside className="hidden lg:block w-64 flex-shrink-0 sticky top-0 h-[calc(100vh-4rem)] self-start z-30">
+            <Sidebar />
+          </aside>
 
-        {/* Main Content - takes remaining space and scrolls */}
-        <main className="flex-1 overflow-y-auto z-20 pb-20 lg:pb-0">
-          <div className="p-4 lg:p-8">
+          {/* 3b. Page Content Wrapper: Grows to fill remaining space, refined padding */}
+          <div className="flex-grow px-4 pt-4 pb-20 lg:px-8 lg:pt-8 lg:pb-8">
             <ExchangePage />
+            <div className="mt-8">
+                <Footer />
+            </div>
           </div>
-          <Footer />
         </main>
       </div>
 

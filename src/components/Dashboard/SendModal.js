@@ -106,10 +106,14 @@ const Step2 = ({ goToNextStep, data, setData }) => {
           value={recipientCoin}
           onChange={(e) => setRecipientCoin(e.target.value)}
           className="w-full py-3 px-4 bg-white/5 text-white rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+          style={{
+            backgroundImage: "none",
+            backgroundColor: "rgba(255, 255, 255, 0.05)"
+          }}
         >
-          <option value="">Select coin</option>
+          <option value="" style={{ backgroundColor: "#352048", color: "white", border: "none" }}>Select coin</option>
           {availableCoinsForRecipient.map((coin) => (
-            <option key={coin} value={coin}>{coin}</option>
+            <option key={coin} value={coin} style={{ backgroundColor: "#352048", color: "white", border: "none" }}>{coin}</option>
           ))}
         </select>
       </div>

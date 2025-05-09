@@ -49,9 +49,13 @@ const Step1 = ({ goToNextStep }) => {
             value={coin}
             onChange={(e) => setCoin(e.target.value)}
             className="w-full py-3 px-4 bg-white/5 text-white rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 appearance-none pr-10"
+            style={{
+              backgroundImage: "none",
+              backgroundColor: "rgba(255, 255, 255, 0.05)"
+            }}
           >
             {['BTC', 'ETH', 'LTC', 'DOGE', 'USDC', 'USDT', 'XRP', 'TRX'].map((coinType) => (
-              <option key={coinType} value={coinType}>
+              <option key={coinType} value={coinType} style={{ backgroundColor: "#352048", color: "white", border: "none" }}>
                 {coinType}
               </option>
             ))}
@@ -121,9 +125,9 @@ const Step2 = ({ data }) => {
       
       <div className="flex items-center justify-center space-x-2 p-3 bg-white/5 rounded-xl border border-white/10">
         <div className="flex items-center">
-          <p className="text-white text-center">Send minimum: {data.coin_amount}</p>
+          <p className="text-white text-center">Send minimum: {data.coin_amount.toFixed(2)}</p>
           <div className="w-6 h-6 mx-2">{getCoinIcon(data.coin)}</div>
-          <span className="text-white/60 text-xs">(≈ $20)</span>
+          <span className="text-white/60 text-xs mx-2">(≈$20)</span>
         </div>
       </div>
       
