@@ -1,5 +1,9 @@
 import React from 'react';
 
+// Import images from assets directory
+import xrpLogo from '../../assets/img/xrp.png';
+import usdcLogo from '../../assets/img/usdc.png';
+
 export const BitcoinIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
     <circle cx="16" cy="16" r="15" fill="#F7931A"/>
@@ -41,11 +45,8 @@ export const UsdtIcon = () => (
 
 // Add more coin icons as needed
 export const UsdcIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-    <circle cx="16" cy="16" r="16" fill="#2775CA"/>
-    <path d="M16 0C7.163 0 0 7.163 0 16s7.163 16 16 16 16-7.163 16-16S24.837 0 16 0zm0 29.333C8.636 29.333 2.667 23.364 2.667 16S8.636 2.667 16 2.667 29.333 8.636 29.333 16 23.364 29.333 16 29.333z" fill="#FFF"/>
-    <path d="M16 8.667c-4.04 0-7.333 3.293-7.333 7.333s3.293 7.333 7.333 7.333 7.333-3.293 7.333-7.333-3.293-7.333-7.333-7.333zm0 13.333c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" fill="#FFF"/>
-  </svg>
+  // Using the imported usdc.png image
+  <img src={usdcLogo} alt="USDC logo" width="32" height="32" />
 );
 
 export const BnbIcon = () => (
@@ -57,11 +58,8 @@ export const BnbIcon = () => (
 );
 
 export const XrpIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-    <circle cx="16" cy="16" r="16" fill="#23292F"/>
-    <path d="M16 0C7.163 0 0 7.163 0 16s7.163 16 16 16 16-7.163 16-16S24.837 0 16 0zm0 29.333C8.636 29.333 2.667 23.364 2.667 16S8.636 2.667 16 2.667 29.333 8.636 29.333 16 23.364 29.333 16 29.333z" fill="#FFF"/>
-    <path d="M16 8.667c-4.04 0-7.333 3.293-7.333 7.333s3.293 7.333 7.333 7.333 7.333-3.293 7.333-7.333-3.293-7.333-7.333-7.333zm0 13.333c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" fill="#FFF"/>
-  </svg>
+  // Using the imported xrp.png image
+  <img src={xrpLogo} alt="XRP logo" width="32" height="32" />
 );
 
 export const AdaIcon = () => (

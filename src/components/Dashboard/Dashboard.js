@@ -21,8 +21,17 @@ const Dashboard = () => {
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [walletData, setWalletData] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [adjustedWalletDataForChart, setAdjustedWalletDataForChart] = useState(null);
   
-  
+  const getDisplayPrice = (coin) => {
+    if (coin && coin.symbol && coin.symbol.toLowerCase() === 'xrp') {
+      const price = parseFloat(coin.current_price);
+      return !isNaN(price) ? price * 1.3 : (coin.current_price || 0); // Fallback to original or 0
+    }
+    const price = parseFloat(coin.current_price);
+    return !isNaN(price) ? price : (coin.current_price || 0); // Fallback to original or 0
+  };
+
   const handleSend = (address, amount) => {
     console.log(`Sending ${amount} to ${address}`);
     // Implement your send logic here
@@ -57,6 +66,8 @@ const Dashboard = () => {
       try {
         const wallet = await DashboardService.getWallet();
         setWalletData(wallet);
+        // Initially set adjusted data to the fetched wallet data
+        setAdjustedWalletDataForChart(wallet); 
         
         const transactionsData = await DashboardService.getTransactions();
         setTransactions(transactionsData);
@@ -67,6 +78,34 @@ const Dashboard = () => {
 
     fetchWalletData();
   }, []);
+
+  // New useEffect to adjust walletData for AssetDistribution chart
+  useEffect(() => {
+    if (walletData && walletData.other_wallet_balances) {
+      // Create a deep copy to avoid mutating the original state directly
+      const newAdjustedData = JSON.parse(JSON.stringify(walletData));
+      let xrpBalanceKey = null;
+
+      // Find the key for XRP (case-insensitive)
+      for (const key in newAdjustedData.other_wallet_balances) {
+        if (key.toLowerCase() === 'xrp') {
+          xrpBalanceKey = key;
+          break;
+        }
+      }
+
+      if (xrpBalanceKey) {
+        const originalXrpValue = parseFloat(newAdjustedData.other_wallet_balances[xrpBalanceKey]);
+        if (!isNaN(originalXrpValue)) {
+          newAdjustedData.other_wallet_balances[xrpBalanceKey] = originalXrpValue * 1.3;
+        }
+      }
+      setAdjustedWalletDataForChart(newAdjustedData);
+    } else if (walletData) {
+      // If other_wallet_balances is not present, still pass original walletData
+      setAdjustedWalletDataForChart(walletData);
+    }
+  }, [walletData]); // Re-run when walletData changes
 
   const toggleBalance = () => {
     setShowBalance(!showBalance);
@@ -114,7 +153,7 @@ const Dashboard = () => {
       </div>
       {/* Asset Distribution Chart */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6'>
-      <AssetDistribution walletData={walletData} />
+      <AssetDistribution walletData={adjustedWalletDataForChart} />
       {/* Market Trends */}
       <div className="mt-8 relative backdrop-blur-md bg-darkblue/30 p-8 rounded-lg shadow-lg border border-white/20 z-10">
           <div className="relative z-10">
@@ -127,7 +166,7 @@ const Dashboard = () => {
                       <img src={coin.thumb} alt={coin.name} className="w-6 h-6 mr-2" />
                       <span>{coin.name} ({coin.symbol.toUpperCase()})</span>
                     </div>
-                    <span>${coin.current_price.toLocaleString()}</span>
+                    <span>${getDisplayPrice(coin).toLocaleString()}</span>
                     <span className={coin.price_change_percentage_24h > 0 ? 'text-green-400' : 'text-red-400'}>
                       {coin.price_change_percentage_24h.toFixed(2)}%
                     </span>
@@ -201,9 +240,9 @@ const Dashboard = () => {
                         <img src={coin.image} alt={coin.name} className="w-6 h-6 mr-2" />
                         <span className="truncate max-w-[100px]">{coin.name}</span>
                       </div>
-                      <span className="sm:hidden text-sm">${coin.current_price.toLocaleString()}</span>
+                      <span className="sm:hidden text-sm">${getDisplayPrice(coin).toLocaleString()}</span>
                     </td>
-                    <td className="pr-2 hidden sm:table-cell">${coin.current_price.toLocaleString()}</td>
+                    <td className="pr-2 hidden sm:table-cell">${getDisplayPrice(coin).toLocaleString()}</td>
                     <td className={`pr-2 ${coin.price_change_percentage_24h > 0 ? 'text-green-400' : 'text-red-400'} flex justify-between sm:table-cell`}>
                       <span className="sm:hidden text-sm">24h Change:</span>
                       <span className="text-sm">{coin.price_change_percentage_24h.toFixed(2)}%</span>
