@@ -62,8 +62,11 @@ const AppContent = () => {
   const isDashboardPage = location.pathname === '/dashboard';
   const isWalletPage = location.pathname === '/wallets';
   
+  // Should we show the mobile menu
+  const showMobileMenu = !isAuthPage && !isDashboardPage && !isWalletPage;
+  
   return (
-    <div className='overflow-hidden'>
+    <div className="overflow-hidden">
       {!isAuthPage && !isDashboardPage && (
         <Header 
           setNavMobile={setNavMobile} 
@@ -72,8 +75,8 @@ const AppContent = () => {
         />
       )}
       
-      {/* Mobile Menu */}
-      {!isAuthPage && !isDashboardPage && !isWalletPage && navMobile && (
+      {/* Mobile Menu - Only render when it should be shown and is active */}
+      {showMobileMenu && navMobile && (
         <NavMobile 
           setNavMobile={setNavMobile} 
           isAuthenticated={isAuthenticated} 
@@ -98,12 +101,9 @@ const AppContent = () => {
         <Route path="/prices" element={isAuthenticated ? <PricesLayout /> : <Navigate to="/login" />} />
         <Route path="/exchange" element={isAuthenticated ? <ExchangeLayout /> : <Navigate to="/login" />} />
         <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" />} />
-        <Route path="/" element={
-          <>
-            <LandingPage />
-          </>
-        } />
+        <Route path="/" element={<LandingPage />} />
       </Routes>
+      
       {!isAuthPage && !isDashboardPage && <Footer />}
     </div>
   );

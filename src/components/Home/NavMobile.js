@@ -62,8 +62,7 @@ const NavMobile = ({ setNavMobile, isAuthenticated, checkAuthStatus }) => {
   };
 
   return (
-    <AnimatePresence mode="wait">
-      {/* Backdrop overlay */}
+    <AnimatePresence>
       <motion.div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
         variants={backdropVariants}
@@ -87,6 +86,7 @@ const NavMobile = ({ setNavMobile, isAuthenticated, checkAuthStatus }) => {
           className="absolute top-4 right-4 cursor-pointer bg-white/5 p-2 rounded-full hover:bg-white/10 transition-colors duration-200 z-10"
           onClick={() => setNavMobile(false)}
           aria-label="Close Menu"
+          type="button"
         >
           <CgClose className="text-2xl text-blue-300" />
         </button>
@@ -112,7 +112,7 @@ const NavMobile = ({ setNavMobile, isAuthenticated, checkAuthStatus }) => {
           >
             {navData.map((item, index) => (
               <motion.li 
-                key={index}
+                key={item.path}
                 custom={index}
                 variants={linkVariants}
                 className="border-b border-white/5 pb-2"

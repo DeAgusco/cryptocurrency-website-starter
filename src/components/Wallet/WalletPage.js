@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend } from 'chart.js';
 import WalletService from '../Services/WalletService';
 import ReceiveModal from '../Dashboard/ReceiveModal';
@@ -31,7 +31,8 @@ const WalletPage = () => {
   const [coinImageUrls, setCoinImageUrls] = useState({});
 
   // Define the list of coins and their CoinGecko IDs that WalletPage will handle
-  const supportedCoinsForImages = [
+  // Using useMemo to prevent recreating this on every render
+  const supportedCoinsForImages = useMemo(() => [
     { id: 'bitcoin', symbol: 'BTC' },
     { id: 'ethereum', symbol: 'ETH' },
     { id: 'litecoin', symbol: 'LTC' },
@@ -45,7 +46,7 @@ const WalletPage = () => {
     { id: 'usd-coin', symbol: 'USDC' },
     { id: 'stellar', symbol: 'XLM' },
     { id: 'tron', symbol: 'TRX' },
-  ];
+  ], []);
 
   useEffect(() => {
     const fetchCoinImages = async () => {
@@ -62,7 +63,7 @@ const WalletPage = () => {
       }
     };
     fetchCoinImages();
-  }, []);
+  }, [supportedCoinsForImages]);
 
   useEffect(() => {
     const fetchWallets = async () => {
