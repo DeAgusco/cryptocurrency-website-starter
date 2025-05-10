@@ -177,25 +177,11 @@ const ReceiveModal = ({ isOpen, onClose, initialCoin }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isOpen && initialCoin) {
-      fetchAddress(initialCoin);
-    }
-  }, [isOpen, initialCoin]);
+    // Reset loading state when modal opens/closes
+    setIsLoading(false);
+  }, [isOpen]);
 
-  const fetchAddress = async (coin) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const response = await DashboardService.requestAddress(coin);
-      setAddressData(response);
-      setCurrentStep(1);
-    } catch (error) {
-      setError('Failed to fetch address. Please try again.');
-      console.error('Error fetching address:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  
 
   const resetModal = useCallback(() => {
     setAddressData(null);
@@ -216,7 +202,6 @@ const ReceiveModal = ({ isOpen, onClose, initialCoin }) => {
     {
       title: "Payment Information",
       component: Step2,
-      qrValue: addressData ? addressData.address : '',
     },
   ];
 

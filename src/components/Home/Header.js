@@ -39,9 +39,9 @@ const Header = ({ setNavMobile, isAuthenticated, checkAuthStatus }) => {
 
         {/* Desktop Nav */}
         <div className="hidden lg:flex gap-x-[55px] items-center">
-          <Nav />
-          <AccountBtns isAuthenticated={isAuthenticated} checkAuthStatus={checkAuthStatus} />
-        </div>
+        <Nav />
+        <AccountBtns isAuthenticated={isAuthenticated} checkAuthStatus={checkAuthStatus} />
+      </div>
 
         {/* Mobile Menu Button */}
         <button 
@@ -55,7 +55,7 @@ const Header = ({ setNavMobile, isAuthenticated, checkAuthStatus }) => {
 
       {/* Decorative line */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
-    </header>
+  </header>
   );
 };
 

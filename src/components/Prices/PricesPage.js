@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import useSWR from 'swr';
 
 // Moved getDisplayPrice and added formatPrice to be accessible by SearchDropdown
 const getDisplayPrice = (coin) => {
@@ -20,6 +21,10 @@ const formatPrice = (price, minDigits = 2, maxDigits = 3) => {
     maximumFractionDigits: maxDigits 
   });
 };
+
+// --- Fetcher function ---
+const fetcher = url => axios.get(url).then(res => res.data);
+// --- End Fetcher function ---
 
 // Skeleton components
 const SkeletonTrendCard = () => (
@@ -97,10 +102,18 @@ const PricesPage = () => {
   const searchRef = useRef(null);
   const [sortConfig, setSortConfig] = useState({ key: 'market_cap_rank', direction: 'ascending' });
   const [visibleCount, setVisibleCount] = useState(50);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+
+  // --- SWR Hooks ---
+  const { data: coinsApiData, error: coinsError } = useSWR('/.netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=true', fetcher);
+  const { data: trendingApiData, error: trendingError } = useSWR('/.netlify/functions/coinGeckoProx?path=search/trending', fetcher);
+  // --- End SWR Hooks ---
+
+  // Derived loading and error states
+  const pageIsLoading = (!coinsApiData && !coinsError) || (!trendingApiData && !trendingError);
+  const pageError = coinsError || trendingError;
+  // ---
 
   useEffect(() => {
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
@@ -108,32 +121,32 @@ const PricesPage = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Update coins state from SWR data
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const coinsResponse = await axios.get('/.netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=true');
-        setCoins(coinsResponse.data.map(c => ({ ...c, image: c.image || '', id: c.id || c.symbol }))); 
+    if (coinsApiData) {
+      setCoins(coinsApiData.map(c => ({ ...c, image: c.image || '', id: c.id || c.symbol })));
+    }
+  }, [coinsApiData]);
 
-        const trendingResponse = await axios.get('/.netlify/functions/coinGeckoProx?path=search/trending');
-        const btcPrice = coinsResponse.data.find(c=>c.symbol==='btc')?.current_price || 50000;
-        setTrendingCoins(trendingResponse.data.coins.map(tc => ({
-          ...tc.item,
-          id: tc.item.id,
-          current_price: parseFloat(tc.item.data?.price || tc.item.price_btc * btcPrice || 0),
-          price_change_percentage_24h: parseFloat(tc.item.data?.price_change_percentage_24h?.usd || 0),
-          sparkline: tc.item.data?.sparkline,
-          thumb: tc.item.thumb || '' 
-        })));
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError('Failed to load cryptocurrency data. Please try again later.');
-      }
-      setIsLoading(false);
-    };
-    fetchData();
-  }, []);
+  // Update trendingCoins state from SWR data (dependent on coinsApiData for BTC price)
+  useEffect(() => {
+    if (trendingApiData && trendingApiData.coins && coinsApiData) {
+      const btcPrice = coinsApiData.find(c => c.symbol === 'btc')?.current_price || 50000;
+      setTrendingCoins(trendingApiData.coins.map(tc => ({
+        ...tc.item,
+        id: tc.item.id,
+        current_price: parseFloat(tc.item.data?.price || tc.item.price_btc * btcPrice || 0),
+        price_change_percentage_24h: parseFloat(tc.item.data?.price_change_percentage_24h?.usd || 0),
+        sparkline: tc.item.data?.sparkline,
+        thumb: tc.item.thumb || ''
+      })));
+    } else if (trendingApiData && trendingApiData.coins && !coinsApiData && !coinsError) {
+      // Handle case where trending data arrives but coins data is still loading without error (e.g. from cache)
+      // For now, we wait for coinsApiData. Or, provide a fallback if btcPrice is crucial and cannot be found.
+      // This could also mean setting trending coins with a placeholder price or indicating price is pending.
+      // For simplicity, current logic defers setting trendingCoins until btcPrice can be determined.
+    }
+  }, [trendingApiData, coinsApiData, coinsError]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -215,11 +228,11 @@ const PricesPage = () => {
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                 <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
-            <SearchDropdownComponent query={searchQuery} coins={coins} onSelect={(coin) => { setSearchQuery(''); setShowSearchDropdown(false); }} showSearchDropdownProp={showSearchDropdown} />
+            <SearchDropdownComponent query={searchQuery} coins={coinsApiData || coins} onSelect={(coin) => { setSearchQuery(''); setShowSearchDropdown(false); }} showSearchDropdownProp={showSearchDropdown} />
         </div>
       </header>
 
-      {isLoading && !coins.length && !trendingCoins.length ? (
+      {pageIsLoading && !coins.length && !trendingCoins.length ? (
           <>
             <div className="mb-12">
               <h2 className="text-2xl font-semibold mb-6 text-gray-100 h-8 w-48 bg-gray-700 rounded animate-pulse" aria-hidden="true"></h2>
@@ -232,7 +245,7 @@ const PricesPage = () => {
               <div className="overflow-x-auto bg-gray-800 rounded-xl shadow-2xl"><SkeletonTable /></div>
             </div>
           </>
-      ) : !isLoading && trendingCoins.length > 0 && (
+      ) : !pageIsLoading && trendingCoins.length > 0 && (
         <section className="mb-12">
           <h2 className="text-2xl font-semibold mb-6 text-gray-100">Market Trends</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -271,14 +284,14 @@ const PricesPage = () => {
 
       <section>
         <h2 className="text-2xl font-semibold mb-6 text-gray-100">All Coins</h2>
-        {isLoading && !coins.length && trendingCoins.length > 0 ? ( /* Show table skeleton only if trending is loaded but main coins are not */
+        {pageIsLoading && !coins.length && trendingCoins.length > 0 ? ( /* Show table skeleton only if trending is loaded but main coins are not */
           <div><div className="overflow-x-auto bg-gray-800 rounded-xl shadow-2xl"><SkeletonTable /></div></div>
-        ) : error ? (
+        ) : pageError ? (
           <div className="text-center py-10 px-4 bg-red-900/20 border border-red-700 rounded-lg">
             <svg className="w-12 h-12 text-red-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <p className="text-red-400 text-lg">{error}</p>
+            <p className="text-red-400 text-lg">{typeof pageError === 'object' ? pageError.message : 'Failed to load cryptocurrency data. Please try again later.'}</p>
           </div>
-        ) : !isLoading && coins.length > 0 ? (
+        ) : !pageIsLoading && coins.length > 0 ? (
           <div className="overflow-x-auto bg-gray-800 rounded-xl shadow-2xl">
             <table className="min-w-full divide-y divide-gray-700">
               <thead className="bg-gray-800 sticky top-0 z-10">
@@ -332,7 +345,7 @@ const PricesPage = () => {
                 ))}
               </tbody>
             </table>
-            {sortedAndFilteredCoins.length > visibleCount && !isLoading && (
+            {sortedAndFilteredCoins.length > visibleCount && !pageIsLoading && (
               <div className="py-6 text-center">
                 <button 
                   onClick={loadMoreCoins} 
@@ -344,13 +357,13 @@ const PricesPage = () => {
             )}
           </div>
         ) : null /* End of main content conditional rendering */}
-        {!isLoading && !error && coins.length === 0 && !searchQuery && (
+        {!pageIsLoading && !pageError && coins.length === 0 && !searchQuery && (
              <div className="text-center py-10 px-4">
                 <svg className="w-12 h-12 text-gray-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <p className="text-gray-500 text-lg">No coins available at the moment.</p>
             </div>
         )}
-        {!isLoading && !error && sortedAndFilteredCoins.length === 0 && searchQuery && (
+        {!pageIsLoading && !pageError && sortedAndFilteredCoins.length === 0 && searchQuery && (
              <div className="text-center py-10 px-4">
                 <svg className="w-12 h-12 text-gray-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <p className="text-gray-500 text-lg">No coins found for "{searchQuery}".</p>

@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import Aos from 'aos';
 import 'aos/dist/aos.css';
 import './styles/animatedBackground.css';
+import { SWRConfig } from 'swr';
+import { localStorageProvider } from './utils/localStorageProvider';
 import Header from './components/Home/Header';
 import NavMobile from './components/Home/NavMobile';
 import LandingPage from './components/LandingPage';
@@ -112,7 +114,28 @@ const AppContent = () => {
 const App = () => {
   return (
     <Router>
-      <AppContent />
+      <SWRConfig value={{
+        provider: localStorageProvider,
+        revalidateOnFocus: false,
+        revalidateIfStale: true,
+        revalidateOnReconnect: true,
+        errorRetryCount: 3,
+        errorRetryInterval: 5000,
+        dedupingInterval: 60000, // 1 minute
+        shouldRetryOnError: (err) => {
+          // Don't retry on rate limit errors (429)
+          if (err && err.status && err.status.error_code === 429) {
+            console.log('Rate limit hit, using cached data');
+            return false;
+          }
+          return true;
+        },
+        onError: (error, key) => {
+          console.error(`SWR error for ${key}:`, error);
+        }
+      }}>
+        <AppContent />
+      </SWRConfig>
     </Router>
   );
 };

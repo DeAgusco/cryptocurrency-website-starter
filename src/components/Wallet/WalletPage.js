@@ -1,11 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import useSWR from 'swr';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend } from 'chart.js';
-import WalletService from '../Services/WalletService';
 import ReceiveModal from '../Dashboard/ReceiveModal';
 import DashboardService from '../Services/DashboardService';
 import axios from 'axios';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend);
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/';
+
+const fetcher = url => axios.get(url).then(res => res.data);
+
+const authedFetcher = async (url) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('User not authenticated. Token not found.');
+  }
+  const response = await axios.get(url, {
+    headers: {
+      'Authorization': `Token ${token}`
+    }
+  });
+  return response.data;
+};
 
 // Helper for responsive price formatting
 const formatPrice = (price, isMobile = false) => {
@@ -23,15 +40,12 @@ const WalletPage = () => {
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
   const [selectedCoin, setSelectedCoin] = useState('');
   const [showBalance, setShowBalance] = useState(true);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('balance'); // 'balance', 'name', 'value'
-  const [sortDirection, setSortDirection] = useState('desc'); // 'asc', 'desc'
+  const [sortBy, setSortBy] = useState('balance');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [coinImageUrls, setCoinImageUrls] = useState({});
 
-  // Define the list of coins and their CoinGecko IDs that WalletPage will handle
-  // Using useMemo to prevent recreating this on every render
   const supportedCoinsForImages = useMemo(() => [
     { id: 'bitcoin', symbol: 'BTC' },
     { id: 'ethereum', symbol: 'ETH' },
@@ -48,39 +62,86 @@ const WalletPage = () => {
     { id: 'tron', symbol: 'TRX' },
   ], []);
 
+  const coinGeckoApiUrl = supportedCoinsForImages.length > 0 
+    ? `/.netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&ids=${supportedCoinsForImages.map(c => c.id).join(',')}&sparkline=false`
+    : null;
+
+  const { 
+    data: swrCoinData, 
+    error: swrCoinError, 
+    isValidating: coinImagesIsValidating 
+  } = useSWR(
+    coinGeckoApiUrl, 
+    fetcher, 
+    {
+      dedupingInterval: 300000,
+      revalidateOnFocus: false,
+    }
+  );
+
   useEffect(() => {
-    const fetchCoinImages = async () => {
-      try {
-        const ids = supportedCoinsForImages.map(c => c.id).join(',');
-        const response = await axios.get(`/.netlify/functions/coinGeckoProx?path=coins/markets?vs_currency=usd&ids=${ids}&sparkline=false`);
-        const imageUrls = {};
-        response.data.forEach(coin => {
+    if (swrCoinData) {
+      const imageUrls = {};
+      const dataToProcess = Array.isArray(swrCoinData) ? swrCoinData : Object.entries(swrCoinData).map(([key, value]) => ({ symbol: key, image: value }));
+      dataToProcess.forEach(coin => {
+        if (coin.symbol) {
           imageUrls[coin.symbol.toLowerCase()] = coin.image;
-        });
-        setCoinImageUrls(imageUrls);
-      } catch (error) {
-        console.error('Error fetching coin images for WalletPage:', error);
-      }
-    };
-    fetchCoinImages();
-  }, [supportedCoinsForImages]);
+        } else if (coin.id) {
+          const foundCoin = supportedCoinsForImages.find(c => c.id === coin.id);
+          if (foundCoin) {
+            imageUrls[foundCoin.symbol.toLowerCase()] = coin.image;
+          }
+        }
+      });
+      setCoinImageUrls(imageUrls);
+    }
+    if (swrCoinError) {
+      console.error('Error fetching coin images with SWR:', swrCoinError);
+      setCoinImageUrls({});
+    }
+  }, [swrCoinData, swrCoinError, supportedCoinsForImages]);
+  
+  const walletsApiUrl = `${API_URL}/wallets/`;
+  const { 
+    data: swrWalletsData, 
+    error: swrWalletsError, 
+    isValidating: walletsIsValidating 
+  } = useSWR(
+    walletsApiUrl, 
+    authedFetcher, 
+    {
+      revalidateOnFocus: true,
+    }
+  );
 
   useEffect(() => {
-    const fetchWallets = async () => {
+    if (swrWalletsData) {
+      setWallets(swrWalletsData);
+    } else if (swrWalletsError) {
+      console.error('Error fetching wallets with SWR:', swrWalletsError);
+      setWallets([]); 
+    } else if (swrWalletsData === undefined && walletsIsValidating) {
+      setWallets([]);
+    }
+    else if (swrWalletsData === undefined && !walletsIsValidating && !swrWalletsError) {
+        if (!Array.isArray(wallets)) setWallets([]);
+    }
+  }, [swrWalletsData, swrWalletsError, walletsIsValidating, wallets]);
+
+  useEffect(() => {
+    const ensureMainWallet = async () => {
       try {
-        setLoading(true);
         await DashboardService.getWallet();
-        const fetchedWallets = await WalletService.getWallets();
-        setWallets(fetchedWallets);
       } catch (error) {
-        console.error('Error fetching wallets:', error);
-      } finally {
-        setLoading(false);
+        // console.error("Error calling DashboardService.getWallet() for warm-up:", error);
       }
     };
-
-    fetchWallets();
+    if (isAuthenticated()) {
+        ensureMainWallet();
+    }
   }, []);
+  
+  const isAuthenticated = () => !!localStorage.getItem('token');
 
   const toggleBalance = () => {
     setShowBalance(!showBalance);
@@ -98,15 +159,6 @@ const WalletPage = () => {
     setIsReceiveModalOpen(true);
   };
 
-  const handleSend = (coin) => {
-    // Handle send functionality
-    console.log(`Send ${coin}`);
-  };
-
-  const handleSwap = (coin) => {
-    // Handle swap functionality
-    console.log(`Swap ${coin}`);
-  };
 
   const toggleSortDirection = () => {
     setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -121,52 +173,48 @@ const WalletPage = () => {
     }
   };
 
-  const filteredWallets = wallets.filter(wallet => {
-    // Filter by search query
+  const filteredWallets = Array.isArray(wallets) ? wallets.filter(wallet => {
     if (searchQuery && !wallet.coin.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
-    
-    // Filter by active tab
     if (activeTab === 'all') return true;
     if (activeTab === 'active') return parseFloat(wallet.balance) > 0;
     if (activeTab === 'inactive') return parseFloat(wallet.balance) <= 0;
-    
     return true;
-  });
+  }) : [];
 
   const sortedWallets = [...filteredWallets].sort((a, b) => {
     if (sortBy === 'name') {
-      return sortDirection === 'asc' 
-        ? a.coin.localeCompare(b.coin) 
-        : b.coin.localeCompare(a.coin);
+      return a.coin.localeCompare(b.coin) * (sortDirection === 'asc' ? 1 : -1);
     }
     if (sortBy === 'balance') {
-      return sortDirection === 'asc' 
-        ? parseFloat(a.balance) - parseFloat(b.balance) 
-        : parseFloat(b.balance) - parseFloat(a.balance);
+      return (parseFloat(a.balance) - parseFloat(b.balance)) * (sortDirection === 'asc' ? 1 : -1);
     }
     if (sortBy === 'value') {
-      return sortDirection === 'asc' 
-        ? parseFloat(a.balance_usd) - parseFloat(b.balance_usd) 
-        : parseFloat(b.balance_usd) - parseFloat(a.balance_usd);
+      return (parseFloat(a.balance_usd) - parseFloat(b.balance_usd)) * (sortDirection === 'asc' ? 1 : -1);
     }
     return 0;
   });
 
-  const totalBalance = wallets.reduce((sum, wallet) => sum + parseFloat(wallet.balance_usd || 0), 0);
+  const totalBalance = Array.isArray(wallets) ? wallets.reduce((sum, wallet) => sum + parseFloat(wallet.balance_usd || 0), 0) : 0;
   
-  // Calculate portfolio allocation percentages
-  const portfolioAllocation = wallets
-    .filter(wallet => parseFloat(wallet.balance_usd) > 0)
-    .map(wallet => ({
-      coin: wallet.coin,
-      percentage: (parseFloat(wallet.balance_usd) / totalBalance) * 100,
-      imageUrl: coinImageUrls[wallet.coin.toLowerCase()] || ''
-    }))
-    .sort((a, b) => b.percentage - a.percentage);
+  const portfolioAllocation = useMemo(() => {
+    if (!Array.isArray(wallets)) return [];
+    return wallets
+      .filter(wallet => parseFloat(wallet.balance_usd) > 0)
+      .map(wallet => ({
+        coin: wallet.coin,
+        percentage: totalBalance > 0 ? (parseFloat(wallet.balance_usd) / totalBalance) * 100 : 0,
+        imageUrl: coinImageUrls[wallet.coin.toLowerCase()] || ''
+      }))
+      .sort((a, b) => b.percentage - a.percentage);
+  }, [wallets, totalBalance, coinImageUrls]);
 
-  if (loading) {
+  const isPageLoading = 
+    (swrWalletsData === undefined && !swrWalletsError && walletsIsValidating) || 
+    (swrCoinData === undefined && !swrCoinError && coinImagesIsValidating);
+
+  if (isPageLoading) {
   return (
       <div className="min-h-screen bg-gradient-to-br from-black to-darkblue text-white p-8">
         <div className="animate-pulse">
@@ -340,13 +388,13 @@ const WalletPage = () => {
 
       {/* Wallets */}
       <div className="space-y-4">
-        {sortedWallets.length === 0 ? (
+        {sortedWallets.length === 0 && !isPageLoading ? (
           <div className="py-12 text-center bg-white/5 rounded-3xl">
             <svg className="w-16 h-16 mx-auto text-white/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
             </svg>
             <h3 className="text-xl font-medium text-white/70">No assets found</h3>
-            <p className="text-white/50 mt-2">Try adjusting your search or filters</p>
+            <p className="text-white/50 mt-2">Try adjusting your search or filters, or wait for assets to load.</p>
           </div>
         ) : (
           sortedWallets.map(wallet => (
@@ -365,7 +413,7 @@ const WalletPage = () => {
                   />
                   <div>
                     <h3 className="text-xl font-semibold">{wallet.coin}</h3>
-                    <p className="text-sm text-white/60">{formatPrice(parseFloat(wallet.exchange_rate), false)}</p>
+                    <p className="text-sm text-white/60">{wallet.exchange_rate ? formatPrice(parseFloat(wallet.exchange_rate), false) : "N/A"}</p>
                   </div>
                 </div>
                 <div className="flex-1">
@@ -373,40 +421,16 @@ const WalletPage = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-xl font-medium text-green-400">
-                    {formatPrice(parseFloat(wallet.balance_usd), false)}
+                    {wallet.balance_usd ? formatPrice(parseFloat(wallet.balance_usd), false) : "N/A"}
                   </p>
                 </div>
-                <div className="w-1/4 flex items-center justify-end space-x-3">
+                <div className="w-1/4 flex items-center justify-end space-x-3" onClick={() => handleReceive(wallet.coin)}>
                   <button 
                     onClick={() => handleReceive(wallet.coin)}
                     className="p-2 rounded-xl bg-white/5 hover:bg-green-500/80 text-white/80 hover:text-white transition-colors"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </button>
-                  <button 
-                    onClick={() => handleSend(wallet.coin)}
-                    className="p-2 rounded-xl bg-white/5 hover:bg-blue-500/80 text-white/80 hover:text-white transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"></path>
-                    </svg>
-                  </button>
-                  <button 
-                    onClick={() => handleSwap(wallet.coin)}
-                    className="p-2 rounded-xl bg-white/5 hover:bg-purple-500/80 text-white/80 hover:text-white transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                    </svg>
-                  </button>
-                  <button 
-                    onClick={() => handleToggleAddresses(wallet.id)}
-                    className="p-2 rounded-xl bg-white/5 hover:bg-white/20 text-white/80 hover:text-white transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"></path>
+                    <svg className="w-5 h-5" fill="#10B981" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                   </button>
                 </div>
@@ -424,13 +448,13 @@ const WalletPage = () => {
                     />
                     <div>
                       <h3 className="text-lg font-semibold">{wallet.coin}</h3>
-                      <p className="text-xs text-white/60">{formatPrice(parseFloat(wallet.exchange_rate), true)}</p>
+                      <p className="text-xs text-white/60">{wallet.exchange_rate ? formatPrice(parseFloat(wallet.exchange_rate), true) : "N/A"}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-medium">{parseFloat(wallet.balance).toLocaleString('en-US')} {wallet.coin}</p>
                     <p className="text-sm font-medium text-green-400">
-                      {formatPrice(parseFloat(wallet.balance_usd), true)}
+                      {wallet.balance_usd ? formatPrice(parseFloat(wallet.balance_usd), true) : "N/A"}
                     </p>
                   </div>
                 </div>
@@ -441,29 +465,13 @@ const WalletPage = () => {
                   >
                     {expandedWallets[wallet.id] ? 'Hide Addresses' : 'Show Addresses'}
                   </button>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2" onClick={() => handleReceive(wallet.coin)}>
                     <button 
                       onClick={() => handleReceive(wallet.coin)}
-                      className="p-1.5 rounded-lg bg-green-500/20 text-green-400"
+                      className="p-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"></path>
-                      </svg>
-                    </button>
-                    <button 
-                      onClick={() => handleSend(wallet.coin)}
-                      className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"></path>
-                      </svg>
-                    </button>
-                    <button 
-                      onClick={() => handleSwap(wallet.coin)}
-                      className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
                       </svg>
                     </button>
                   </div>
@@ -474,10 +482,15 @@ const WalletPage = () => {
               {expandedWallets[wallet.id] && (
                 <div className="px-6 pb-6 -mt-2">
                   <div className="border-t border-white/10 pt-4 space-y-3">
-                    {wallet.address.length > 0 ? (
+                    {wallet.address && wallet.address.length > 0 ? (
                       wallet.address.map((addressObj, index) => (
                         <div key={index} className="bg-white/5 p-4 rounded-xl flex items-center justify-between">
-                          <p className="text-white/90 font-mono text-sm break-all">{addressObj.address}</p>
+                          <div className="bg-white/5 p-4 rounded-xl break-all text-sm mb-4 text-white border border-white/10 relative overflow-hidden">
+                            <div className="absolute -bottom-10 -right-10 w-20 h-20 bg-blue-500/10 rounded-full blur-xl"></div>
+                            <div className="relative z-10">
+                              {addressObj.address}
+                            </div>
+                          </div>
                           <button className="ml-2 p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-colors">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />

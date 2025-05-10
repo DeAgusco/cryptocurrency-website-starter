@@ -146,38 +146,110 @@ const Step1 = ({ goToNextStep, coins, fromCoin, setFromCoin, toCoin, setToCoin, 
   );
 };
 
-const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, exchangeRate, displayExchangeRate, fromBalance, error, setError }) => {
+const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, setEstimatedAmount, exchangeRate, displayExchangeRate, fromBalance, toBalance, error, setError }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [toAmount, setToAmount] = useState(estimatedAmount || '');
+  const [fromInputActive, setFromInputActive] = useState(true);
+  const [toInputActive, setToInputActive] = useState(false);
+
+  // Only update toAmount when amount changes and fromInputActive is true
+  useEffect(() => {
+    if (fromInputActive && amount && !isNaN(parseFloat(amount)) && displayExchangeRate) {
+      const newToAmount = (parseFloat(amount) * displayExchangeRate).toFixed(8);
+      if (!isNaN(parseFloat(newToAmount))) {
+        setToAmount(newToAmount);
+        setEstimatedAmount(newToAmount);
+      }
+    }
+  }, [amount, displayExchangeRate, fromInputActive, setEstimatedAmount]);
+
+  // Only update amount when toAmount changes and toInputActive is true
+  useEffect(() => {
+    if (toInputActive && toAmount && !isNaN(parseFloat(toAmount)) && displayExchangeRate) {
+      const newFromAmount = (parseFloat(toAmount) / displayExchangeRate).toFixed(8);
+      if (!isNaN(parseFloat(newFromAmount))) {
+        setAmount(newFromAmount);
+        
+        // Update error state for balance check
+        if (parseFloat(newFromAmount) > fromBalance) {
+          setError('Insufficient balance');
+        } else {
+          setError('');
+        }
+      }
+    }
+  }, [toAmount, displayExchangeRate, toInputActive, fromBalance, setAmount, setError]);
+
+  const handleFromAmountChange = (e) => {
+    const value = e.target.value;
+    
+    // Set active states
+    setFromInputActive(true);
+    setToInputActive(false);
+    
+    // Input validation
+    if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+      setAmount(value);
+      
+      if (value === '') {
+        setToAmount('');
+        setError('');
+      } else if (parseFloat(value) > fromBalance) {
+        setError('Insufficient balance');
+      } else {
+        setError('');
+      }
+    }
+  };
+
+  const handleToAmountChange = (e) => {
+    const value = e.target.value;
+    
+    // Set active states
+    setFromInputActive(false);
+    setToInputActive(true);
+    
+    // Input validation
+    if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+      setToAmount(value);
+      setEstimatedAmount(value);
+      
+      if (value === '') {
+        setAmount('');
+        setError('');
+      } else if (displayExchangeRate > 0) {
+        // Calculate will happen in the useEffect
+      }
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Calculate actualToAmount using the current `amount` prop (from input) and original `exchangeRate`
+    // Calculate actualToAmount using the current `amount` prop and original `exchangeRate`
     const actualToAmount = (parseFloat(amount) * exchangeRate).toFixed(8);
-
-    console.log('[DEBUG] Step2 handleSubmit triggered.');
-    console.log('[DEBUG] Current amount (from input):', amount, typeof amount);
-    console.log('[DEBUG] Calculated actualToAmount:', actualToAmount, typeof actualToAmount);
-    console.log('[DEBUG] Original exchangeRate:', exchangeRate, typeof exchangeRate);
-
-    // Check against the current input `amount`
-    if (amount && parseFloat(amount) > 0 && actualToAmount && parseFloat(actualToAmount) > 0) {
+    
+    // Validation - add more comprehensive checks
+    const validAmount = amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0;
+    const validToAmount = toAmount && !isNaN(parseFloat(toAmount)) && parseFloat(toAmount) > 0;
+    const sufficientBalance = parseFloat(amount) <= fromBalance;
+    
+    if (validAmount && validToAmount && sufficientBalance) {
       setIsLoading(true);
       const payload = {
-        fromCoin: data.fromCoin, // fromCoin comes from Step1 selection via data prop
-        toCoin: data.toCoin,     // toCoin comes from Step1 selection via data prop
-        fromAmount: amount,      // Use the current input amount 
+        fromCoin: data.fromCoin,
+        toCoin: data.toCoin,
+        fromAmount: amount,
         toAmount: actualToAmount 
       };
-      console.log('[DEBUG] Payload object to send to service:', payload);
       
       try {
         await ExchangeService.executeExchange(payload);
         goToNextStep({ 
-          amount, // Pass current input amount
-          estimatedAmount, // Pass displayed estimated amount
-          actualToAmount,  // Pass calculated actual amount
-          fromCoin: data.fromCoin, // Ensure fromCoin/toCoin are in data for Step3
+          amount,
+          estimatedAmount: toAmount,
+          actualToAmount,
+          fromCoin: data.fromCoin,
           toCoin: data.toCoin,
           error: null 
         });
@@ -185,7 +257,7 @@ const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, exchang
         console.error('Error executing exchange:', errorLogging);
         goToNextStep({ 
           amount, 
-          estimatedAmount, 
+          estimatedAmount: toAmount, 
           actualToAmount, 
           fromCoin: data.fromCoin,
           toCoin: data.toCoin,
@@ -195,48 +267,29 @@ const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, exchang
         setIsLoading(false);
       }
     } else {
-      console.warn('[DEBUG] handleSubmit condition not met. Amount or actualToAmount invalid.', { amount, actualToAmount });
-      setError('Please enter a valid amount to swap.'); // Provide more generic error if needed
+      setError('Please enter a valid amount to swap.');
     }
   };
-
-  const handleAmountChange = (e) => {
-    const value = e.target.value;
-    if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= fromBalance)) {
-      setAmount(value);
-      setError('');
-    } else {
-      setError('Insufficient balance');
-    }
-  };
-
-  // Log values for the disabled condition
-  const isButtonDisabled = !amount || parseFloat(amount) <= 0 || parseFloat(amount) > fromBalance || !estimatedAmount || isLoading;
-  if (isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > fromBalance || !estimatedAmount) {
-      console.log('[DEBUG] Swap button disabled state check:', {
-        amount,
-        isAmountPositive: parseFloat(amount) > 0,
-        isAmountLessThanBalance: parseFloat(amount) <= fromBalance,
-        fromBalance,
-        estimatedAmountPresent: !!estimatedAmount,
-        isLoading,
-        calculatedIsButtonDisabled: isButtonDisabled
-      });
-  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* From Currency Amount Input */}
       <div>
-        <label className="block text-white text-sm font-medium mb-2" htmlFor="amount">
-          Amount to swap:
+        <label className="block text-white text-sm font-medium mb-2" htmlFor="fromAmount">
+          <span>Amount to swap:</span>
+          <span className="ml-2 text-xs text-blue-300">(you can enter values in either field)</span>
         </label>
-        <div className="relative">
+        <div className={`relative ${fromInputActive ? 'ring-2 ring-blue-500/50' : ''}`}>
           <input
             type="number"
-            id="amount"
+            id="fromAmount"
             value={amount}
-            onChange={handleAmountChange}
-            className="w-full py-3 px-4 bg-white/5 text-white rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 pr-12"
+            onChange={handleFromAmountChange}
+            onFocus={() => {
+              setFromInputActive(true);
+              setToInputActive(false);
+            }}
+            className={`w-full py-3 px-4 bg-white/5 text-white rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 pr-12`}
             placeholder={`Enter amount in ${data.fromCoin}`}
             step="0.00000001"
           />
@@ -252,19 +305,47 @@ const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, exchang
         </p>
       </div>
 
-      {estimatedAmount !== null && (
-        <div className="bg-gradient-to-br from-white/5 to-white/10 p-5 rounded-xl text-white border border-white/10 relative overflow-hidden">
-          <div className="absolute -bottom-10 -right-10 w-20 h-20 bg-blue-500/10 rounded-full blur-xl"></div>
-          <div className="relative z-10">
-            <p className="text-white/60 mb-2">You will receive approximately:</p>
-            <div className="flex items-center space-x-2">
-              <p className="text-2xl font-bold text-white">{estimatedAmount}</p>
-              <div className="w-7 h-7">{getCoinIcon(data.toCoin)}</div>
-            </div>
+      {/* Arrow Separator with bidirectional indicator */}
+      <div className="flex justify-center items-center py-2">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-white/10">
+          <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+        </div>
+      </div>
+
+      {/* To Currency Amount Input */}
+      <div>
+        <label className="block text-white text-sm font-medium mb-2" htmlFor="toAmount">
+          You will receive:
+        </label>
+        <div className={`relative ${toInputActive ? 'ring-2 ring-blue-500/50' : ''}`}>
+          <input
+            type="number"
+            id="toAmount"
+            value={toAmount}
+            onChange={handleToAmountChange}
+            onFocus={() => {
+              setFromInputActive(false);
+              setToInputActive(true);
+            }}
+            className="w-full py-3 px-4 bg-white/5 text-white rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 pr-12"
+            placeholder={`Amount in ${data.toCoin}`}
+            step="0.00000001"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <div className="w-6 h-6">{getCoinIcon(data.toCoin)}</div>
           </div>
         </div>
-      )}
+        <p className="text-sm text-blue-300 mt-2 flex items-center">
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Current balance: {toBalance.toFixed(8)} {data.toCoin}
+        </p>
+      </div>
 
+      {/* Exchange rate display */}
       {exchangeRate && (
         <div className="bg-gradient-to-br from-white/5 to-white/10 p-4 rounded-xl text-white border border-white/10">
           <div className="flex items-center justify-between">
@@ -283,6 +364,7 @@ const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, exchang
         </div>
       )}
 
+      {/* Error display */}
       {error && (
         <p className="text-red-400 text-sm bg-red-400/10 p-3 rounded-xl border border-red-400/20 flex items-center">
           <svg className="w-5 h-5 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -292,10 +374,11 @@ const Step2 = ({ goToNextStep, data, amount, setAmount, estimatedAmount, exchang
         </p>
       )}
 
+      {/* Submit button */}
       <button
         type="submit"
         className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 flex justify-center items-center"
-        disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > fromBalance || !estimatedAmount || isLoading}
+        disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > fromBalance || !toAmount || parseFloat(toAmount) <= 0 || isLoading}
       >
         {isLoading ? (
           <div className="relative w-6 h-6">
@@ -498,6 +581,7 @@ const SwapModal = ({ isOpen, onClose }) => {
           amount,
           setAmount,
           estimatedAmount,
+          setEstimatedAmount,
           exchangeRate,
           displayExchangeRate,
           fromBalance,

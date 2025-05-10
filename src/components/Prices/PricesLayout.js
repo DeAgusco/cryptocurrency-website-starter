@@ -9,7 +9,7 @@ const PricesLayout = () => {
     <div className="relative min-h-screen bg-gradient-to-br from-black to-darkblue">
       {/* 1. Navbar: Fixed top, explicit height, high z-index */}
       <div className="fixed top-0 left-0 right-0 z-40 h-16 shadow-lg">
-        <Navbar />
+      <Navbar />
       </div>
 
       {/* 2. Main Area Container: Absolute, covers area below navbar. Prevents x-overflow. */}
@@ -20,7 +20,7 @@ const PricesLayout = () => {
           
           {/* 3a. Desktop Sidebar: Sticky within the scrolling <main>, viewport-based height */}
           <aside className="hidden lg:block w-64 flex-shrink-0 sticky top-0 h-[calc(100vh-4rem)] self-start z-30">
-            <Sidebar />
+              <Sidebar />
           </aside>
 
           {/* 3b. Page Content Wrapper: Grows to fill remaining space, refined padding */}

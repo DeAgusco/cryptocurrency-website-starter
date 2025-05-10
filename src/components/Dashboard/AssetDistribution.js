@@ -8,9 +8,14 @@ const AssetDistribution = ({ walletData, coinImagesMap }) => {
   const [assetDetails, setAssetDetails] = useState([]);
   const [selectedView, setSelectedView] = useState('doughnut'); // 'doughnut', 'bar', 'list'
 
+  console.log("AssetDistribution - walletData:", walletData);
+  console.log("AssetDistribution - coinImagesMap:", coinImagesMap ? Object.keys(coinImagesMap).length : null);
+  
   useEffect(() => {
+    console.log("AssetDistribution - useEffect triggered, walletData:", walletData);
     const prepareAssetDistributionData = () => {
       if (!walletData || !walletData.other_wallet_balances) {
+        console.log("AssetDistribution - No wallet data or other_wallet_balances, using empty data");
         const emptyData = {
           labels: ['No Data'],
           datasets: [{
@@ -26,6 +31,8 @@ const AssetDistribution = ({ walletData, coinImagesMap }) => {
         return;
       }
 
+      console.log("AssetDistribution - Preparing chart data from walletData");
+      
       // Create stylish gradient colors
       const generateBackgroundColor = (index, total) => {
         const hue = (index / total) * 360;
@@ -39,7 +46,10 @@ const AssetDistribution = ({ walletData, coinImagesMap }) => {
 
       // Extract data
       const entries = Object.entries(walletData.other_wallet_balances);
+      console.log("AssetDistribution - Wallet entries:", entries);
+      
       const filteredEntries = entries.filter(([_, value]) => parseFloat(value) > 0);
+      console.log("AssetDistribution - Filtered entries:", filteredEntries);
       
       // Sort by value (balance) from highest to lowest
       filteredEntries.sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]));
@@ -80,13 +90,34 @@ const AssetDistribution = ({ walletData, coinImagesMap }) => {
         }]
       };
       
+      console.log("AssetDistribution - Setting chart data:", chartDataObject);
       setChartData(chartDataObject);
     };
 
-    if (walletData) {
-      prepareAssetDistributionData();
-    }
+    prepareAssetDistributionData();
   }, [walletData, coinImagesMap]);
+
+  // Force a fallback chart if data preparation takes too long
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!chartData) {
+        console.log("AssetDistribution - Timed out waiting for chart data, using fallback");
+        const fallbackData = {
+          labels: ['Loading...'],
+          datasets: [{
+            data: [1],
+            backgroundColor: ['rgba(59, 130, 246, 0.5)'],
+            borderColor: ['rgba(59, 130, 246, 0.8)'],
+            borderWidth: 1,
+            hoverOffset: 4
+          }]
+        };
+        setChartData(fallbackData);
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [chartData]);
 
   const handleChartHover = (event, chartElements) => {
     if (chartElements.length > 0) {
@@ -115,6 +146,7 @@ const AssetDistribution = ({ walletData, coinImagesMap }) => {
 
   // Render a loading state if data is not yet prepared
   if (!chartData) {
+    console.log("AssetDistribution - Rendering loading state");
     return (
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-3xl p-8 shadow-[0_0_15px_rgba(101,121,248,0.3)] backdrop-blur-lg border border-white/10">
         <div className="animate-pulse">

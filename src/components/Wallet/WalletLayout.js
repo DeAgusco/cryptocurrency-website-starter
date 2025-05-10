@@ -38,12 +38,7 @@ const WalletLayout = () => {
         <Sidebar />
       </div>
 
-      {/* 5. Background decorative elements */}
-      <div className="fixed inset-0 pointer-events-none z-60">
-        <div className="absolute top-1/4 -left-80 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/3 -right-80 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-purple-400/5 rounded-full blur-3xl"></div>
-      </div>
+      
     </div>
   );
 };
