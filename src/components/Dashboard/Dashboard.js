@@ -503,21 +503,21 @@ const Dashboard = () => {
                     <div className="flex items-center">
                       <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mr-3 flex-shrink-0">
                         <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          {transaction.type === 'send' ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 15l7-7 7 7" /> :
-                           transaction.type === 'receive' ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" /> :
+                          {transaction.transaction_type === 'send' ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 15l7-7 7 7" /> :
+                           transaction.transaction_type === 'Deposit' ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" /> :
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />}
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{transaction.type ? transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) : 'Transaction'}</p>
-                        <p className="text-sm text-white/60">{transaction.date ? new Date(transaction.date).toLocaleDateString() : 'N/A'}</p>
+                        <p className="font-medium">{transaction.transaction_type ? transaction.transaction_type.charAt(0).toUpperCase() + transaction.transaction_type.slice(1) : 'Transaction'}</p>
+                        <p className="text-sm text-white/60">{transaction.timestamp ? new Date(transaction.timestamp).toLocaleDateString() : 'N/A'}</p>
                       </div>
                       <div className="text-right">
-                        <p className={`font-medium ${transaction.type === 'receive' ? 'text-green-400' : 'text-white'}`}>
-                          {transaction.type === 'receive' ? '+' : '-'}{transaction.amount || '0.00'} {transaction.coin || ''}
+                        <p className={`font-small md:font-medium ${transaction.transaction_type === 'Deposit' ? 'text-green-400' : 'text-white'}`}>
+                          {transaction.transaction_type === 'Deposit' ? '+$' : '-$'}{parseFloat(transaction.amount || '0.00').toFixed(1)} {transaction.currency || ''}
                         </p>
                         <p className="text-sm text-white/60">
-                          {(parseFloat(transaction.amount) * parseFloat(transaction.price)) ? formatPrice(parseFloat(transaction.amount) * parseFloat(transaction.price)) : 'N/A'}
+                          {(parseFloat(transaction.amount)) ? formatPrice(parseFloat(transaction.amount)) : 'N/A'}
                         </p>
                       </div>
                     </div>
