@@ -65,7 +65,7 @@ const SkeletonActionCard = () => (
 const SkeletonCoinItem = () => (
   <div className="bg-white/5 rounded-xl p-3 sm:p-4 animate-pulse mb-3">
     {/* Desktop layout */}
-    <div className="hidden sm:flex items-center">
+    <div className="hidden md:flex items-center">
       <div className="w-10 h-10 rounded-full bg-white/10 mr-3"></div>
       <div className="flex-1">
         <SkeletonTextLine width="w-20" height="h-4" className="mb-2" />
@@ -78,7 +78,7 @@ const SkeletonCoinItem = () => (
     </div>
     
     {/* Mobile layout */}
-    <div className="sm:hidden">
+    <div className="md:hidden">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center">
           <div className="w-8 h-8 rounded-full bg-white/10 mr-2"></div>
