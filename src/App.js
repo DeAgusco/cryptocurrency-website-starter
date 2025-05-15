@@ -14,6 +14,7 @@ import Signup from './components/Auth/Signup';
 import DashboardModal from './components/Dashboard/DashboardModal';
 import EmailConfirmationApproval from './components/Auth/EmailConfirmationApproval';
 import EmailConfirmationListener from './components/Auth/EmailConfirmationListener';
+import OtpVerification from './components/Auth/OtpVerification';
 import WalletLayout from './components/Wallet/WalletLayout';
 import PricesLayout from './components/Prices/PricesLayout';
 import ExchangeLayout from './components/Exchange/ExchangeLayout';
@@ -60,7 +61,7 @@ const AppContent = () => {
     setNavMobile(false);
   }, [location.pathname]);
 
-  const isAuthPage = ['/login', '/signup', '/email-confirmation', '/wallets', '/prices', '/exchange'].includes(location.pathname) || location.pathname.startsWith('/activate/') || location.pathname.startsWith('/reset-password/');
+  const isAuthPage = ['/login', '/signup', '/email-confirmation', '/otp-verification', '/wallets', '/prices', '/exchange'].includes(location.pathname) || location.pathname.startsWith('/activate/') || location.pathname.startsWith('/reset-password/');
   const isDashboardPage = location.pathname === '/dashboard';
   const isWalletPage = location.pathname === '/wallets';
   
@@ -93,6 +94,7 @@ const AppContent = () => {
         />
         <Route path="/signup" element={<Signup />} />
         <Route path="/email-confirmation" element={<EmailConfirmationListener setIsAuthenticated={setIsAuthenticated} />} />
+        <Route path="/otp-verification" element={<OtpVerification />} />
         <Route path="/activate/:activation_token" element={<EmailConfirmationApproval />} />
         <Route path='/reset-password/:token' element={<PasswordReset />} />
         <Route 

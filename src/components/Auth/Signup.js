@@ -36,7 +36,7 @@ const Signup = () => {
         setError(response.error);
       } else {
         console.log('Registration successful:', response);
-        navigate('/email-confirmation');
+        navigate('/otp-verification');
       }
     } catch (error) {
       console.error('Registration failed:', error);

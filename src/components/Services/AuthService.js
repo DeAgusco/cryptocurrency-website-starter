@@ -42,6 +42,55 @@ const AuthService = {
     }
   },
 
+  async verifyOtp(otp) {
+    try {
+      const userId = localStorage.getItem('user_id');
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await ApiService.post('/account/verify-otp/', {
+        user_id: userId,
+        otp: otp
+      });
+
+      if (response && response.token) {
+        // Store the token in localStorage
+        localStorage.setItem('token', response.token);
+        console.log('Token set in localStorage via OTP verification:', response.token);
+        
+        // Dispatch auth change event
+        window.dispatchEvent(new Event('authChange'));
+        return response;
+      } else if (response && response.error) {
+        throw new Error(response.error || 'OTP verification failed');
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      throw error;
+    }
+  },
+
+  async resendOtp() {
+    try {
+      const userId = localStorage.getItem('user_id');
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await ApiService.post('/account/resend-otp/', {
+        user_id: userId
+      });
+
+      return response;
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      throw error;
+    }
+  },
+
   async verifyWebSocket(user_id) {
     return new Promise((resolve, reject) => {
       // Always use secure websockets

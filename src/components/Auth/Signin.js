@@ -19,7 +19,7 @@ const Signin = () => {
       setIsLoading(true);
       const response = await AuthService.login(email, password);
       console.log('Login successful:', response);
-      navigate('/email-confirmation');
+      navigate('/otp-verification');
     } catch (error) {
       console.error('Login failed:', error);
       setError('Login failed. ' + error.message);
