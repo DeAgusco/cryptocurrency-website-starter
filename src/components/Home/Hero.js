@@ -54,7 +54,7 @@ const Hero = () => {
   }, []);
 
   const handleGetStarted = () => {
-    if (AuthService.isAuthenticated()) {
+    if (AuthService.isLoggedIn()) {
       navigate('/dashboard');
     } else {
       navigate('/signup');
@@ -151,7 +151,7 @@ const Hero = () => {
               </button>
               
               <button 
-                onClick={() => navigate('/prices')}
+                onClick={handleGetStarted}
                 className="bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white border border-white/10 font-medium py-4 px-8 rounded-xl transition-all duration-300"
                 type="button"
               >

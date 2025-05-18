@@ -9,7 +9,7 @@ const Trade = () => {
   const navigate = useNavigate();
 
   const handleStartTrading = () => {
-    if (AuthService.isAuthenticated()) {
+    if (AuthService.isLoggedIn()) {
       navigate('/dashboard');
     } else {
       navigate('/signup');

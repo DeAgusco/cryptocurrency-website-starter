@@ -1,7 +1,18 @@
 import React from 'react';
 import Image2 from '../../assets/img/feature-2-img.png';
+import { useNavigate } from 'react-router-dom';
+import AuthService from '../../services/auth.service';
+
 
 const FeaturesSection2 = () => {
+  const navigate = useNavigate();
+  const handleGetStarted = () => {
+    if (AuthService.isLoggedIn()) {
+      navigate('/dashboard');
+    } else {
+      navigate('/signup');
+    }
+  };
   return (
     <section>
       <div className='container mx-auto mb-5'>
@@ -14,7 +25,7 @@ const FeaturesSection2 = () => {
             <p className='text-gray mb-8 font-medium'>
               View all mining related information in realtime, anywhere any day, and make informed decisions on what to mine.
             </p>
-            <button className='btn px-8'>Learn more</button>
+            <button onClick={handleGetStarted} className='btn px-8'>Learn more</button>
           </div>
         </div>
       </div>
