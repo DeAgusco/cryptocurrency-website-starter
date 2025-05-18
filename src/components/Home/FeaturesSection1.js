@@ -1,7 +1,7 @@
 import React from 'react';
 import Image1 from '../../assets/img/feature-1-img.png';
 import { useNavigate } from 'react-router-dom';
-import AuthService from '../../services/auth.service';
+import AuthService from '../Services/AuthService';
 
 const FeaturesSection1 = () => {
   const navigate = useNavigate();

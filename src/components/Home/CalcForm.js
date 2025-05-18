@@ -7,10 +7,14 @@ const CalcForm = () => {
 
   const handleCalculate = (e) => {
     e.preventDefault();
-    if (AuthService.isAuthenticated()) {
+    if (!amount || !fromCurrency || !toCurrency) {
+      alert('Please fill in all fields');
+      return;
+    }
+    if (AuthService.isLoggedIn()) {
       navigate('/dashboard');
     } else {
-      navigate('/signup');
+      navigate('/login');
     }
   };
 

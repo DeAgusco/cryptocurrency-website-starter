@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from '../../assets/img/why-img.png';
 import { useNavigate } from 'react-router-dom';
-import AuthService from '../../services/auth.service';
+import AuthService from '../Services/AuthService';
 
 const Why = () => {
   const navigate = useNavigate();
