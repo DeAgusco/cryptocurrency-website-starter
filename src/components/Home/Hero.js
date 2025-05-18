@@ -96,7 +96,7 @@ const Hero = () => {
       </div>
 
       <div className="container mx-auto px-4 z-10">
-        <div className="flex flex-col-reverse lg:flex-row items-center justify-between gap-12">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
           {/* Left Column - Text Content */}
           <div className="w-full lg:w-1/2 space-y-8">
             {/* Animated Promo Badge */}
